@@ -8,7 +8,7 @@
  * @returns {string} The formatted text
  */
 export function infoLine(text) {
-  return `\x1b[34m${text}\x1b[0m\n`;
+	return `\x1b[34m${text}\x1b[0m\n`;
 }
 
 /**
@@ -17,7 +17,7 @@ export function infoLine(text) {
  * @returns {string} The formatted text
  */
 export function successLine(text) {
-  return `\x1b[32m${text}\x1b[0m\n`;
+	return `\x1b[32m${text}\x1b[0m\n`;
 }
 
 /**
@@ -26,7 +26,7 @@ export function successLine(text) {
  * @returns {string} The formatted text
  */
 export function errorLine(text) {
-  return `\x1b[31m${text}\x1b[0m\n`;
+	return `\x1b[31m${text}\x1b[0m\n`;
 }
 
 /**
@@ -35,5 +35,5 @@ export function errorLine(text) {
  * @returns {string} The formatted text
  */
 export function warningLine(text) {
-  return `\x1b[33m${text}\x1b[0m\n`;
+	return `\x1b[33m${text}\x1b[0m\n`;
 }
