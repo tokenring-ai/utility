@@ -8,7 +8,7 @@
 	"exports": {
 		"./*": "./src/*.js"
 	},
-	"private": true,
+	"license": "MIT",
 	"scripts": {
 		"lint": "eslint src ",
 		"eslint": "eslint --fix ./"
