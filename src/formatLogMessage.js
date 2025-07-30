@@ -24,7 +24,7 @@ export default function formatLogMessages(msgs) {
 						...msg,
 						toString: () => JSON.stringify(msg, null, 2),
 					};
-				} catch (err) {
+				} catch (_err) {
 					return msg; // Fallback if JSON stringification fails
 				}
 			}
