@@ -6,7 +6,7 @@
 		"@token-ring/registry": "0.1.0"
 	},
 	"exports": {
-		"./*": "./src/*.js"
+		"./*": "./src/*.ts"
 	},
 	"license": "MIT",
 	"scripts": {
