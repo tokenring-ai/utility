@@ -2,7 +2,7 @@
 	"name": "@token-ring/utility",
 	"version": "0.1.0",
 	"dependencies": {
-		"@token-ring/eslint-config": "0.0.0",
+
 		"@token-ring/registry": "0.1.0"
 	},
 	"exports": {
@@ -10,8 +10,8 @@
 	},
 	"license": "MIT",
 	"scripts": {
-		"lint": "eslint src ",
-		"eslint": "eslint --fix ./"
+
+
 	},
 	"type": "module"
 }
