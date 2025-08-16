@@ -7,10 +7,12 @@
  * @returns void
  */
 export function abandon<T>(promise: Promise<T>): void {
-    promise.then(
-        () => {}, // Ignore resolved value
-        () => {}  // Ignore rejected error
-    );
+  promise.then(
+    () => {
+    }, // Ignore resolved value
+    () => {
+    }  // Ignore rejected error
+  );
 }
 
 // Usage example:
