@@ -1,7 +1,5 @@
 /**
  * Formats log messages similar to console.log, with special handling for errors
- * @param msgs - Messages to format
- * @returns Formatted messages as a single string
  */
 export default function formatLogMessages(msgs: unknown[]): string {
   return msgs

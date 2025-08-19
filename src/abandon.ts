@@ -3,8 +3,6 @@
  * This is useful to prevent unhandled promise rejection warnings when you don't care about
  * the promise's outcome.
  *
- * @param promise The promise to abandon
- * @returns void
  */
 export function abandon<T>(promise: Promise<T>): void {
   promise.then(

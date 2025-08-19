@@ -1,17 +1,14 @@
 {
-	"name": "@token-ring/utility",
-	"version": "0.1.0",
-	"dependencies": {
-
-		"@token-ring/registry": "0.1.0"
-	},
-	"exports": {
-		"./*": "./src/*.ts"
-	},
-	"license": "MIT",
-	"scripts": {
-
-
-	},
-	"type": "module"
+ "name": "@token-ring/utility",
+ "version": "0.1.0",
+ "dependencies": {
+  "@token-ring/registry": "0.1.0"
+ },
+ "exports": {
+  "./*": "./src/*.ts"
+ },
+ "license": "MIT",
+ "scripts": {
+ },
+ "type": "module"
 }

@@ -16,9 +16,6 @@ class Cache<V = unknown> {
 
   /**
    * Set a value in the cache with an optional TTL
-   * @param key - Cache key
-   * @param value - Value to cache
-   * @param ttl - Time to live in milliseconds (optional)
    */
   set(key: string, value: V, ttl: number | null = null): void {
     this.cache.set(key, value);
@@ -40,8 +37,6 @@ class Cache<V = unknown> {
 
   /**
    * Get a value from the cache
-   * @param key - Cache key
-   * @returns Cached value or undefined if not found
    */
   get(key: string): V | undefined {
     // Check if key exists and not expired
@@ -56,7 +51,6 @@ class Cache<V = unknown> {
 
   /**
    * Delete a value from the cache
-   * @param key - Cache key
    */
   delete(key: string): void {
     this.cache.delete(key);
@@ -73,10 +67,6 @@ class Cache<V = unknown> {
 
   /**
    * Get a value from the cache or compute it if not found
-   * @param key - Cache key
-   * @param fn - Function to compute the value if not in cache
-   * @param ttl - Time to live in milliseconds (optional)
-   * @returns Cached or computed value
    */
   async getOrSet(
     key: string,

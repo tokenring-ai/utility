@@ -4,8 +4,6 @@
 
 /**
  * Escape a string for use in a shell command
- * @param arg The argument to escape
- * @returns The escaped argument
  */
 export function shellEscape(arg: string): string {
   if (!arg) {
