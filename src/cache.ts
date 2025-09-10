@@ -31,7 +31,7 @@ class Cache<V = unknown> {
         if (typeof exp === "number" && exp <= Date.now()) {
           this.delete(key);
         }
-      }, ttl);
+      }, ttl).unref();
     }
   }
 

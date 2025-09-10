@@ -1,10 +1,7 @@
-export default class GenericSingularRegistry<T = any> {
-  private items: Record<string, T> = {};
-  private activeItemName: string | null = null;
+import KeyedRegistry from "./KeyedRegistry.js";
 
-  register = (name: string, resource: T) => {
-    this.items[name] = resource;
-  }
+export default class KeyedRegistryWithSingleSelection<T = any> extends KeyedRegistry<T> {
+  private activeItemName: string | null = null;
 
   getActiveItemName = (): string | null => {
     return this.activeItemName;
@@ -24,21 +21,10 @@ export default class GenericSingularRegistry<T = any> {
     return this.items[this.activeItemName];
   }
 
-  getItemByName = (name: string): T => {
-    if (this.activeItemName !== name) {
-      throw new Error(`Item ${name} not enabled`);
-    }
-    return this.items[name];
-  }
-
-  getAllItemNames = (): string[] => {
-    return Object.keys(this.items);
-  }
-
   getActiveItemEntry = (): Record<string, T> => {
     if (this.activeItemName === null) {
       return {};
     }
-    return { [this.activeItemName]: this.items[this.activeItemName] };
+    return {[this.activeItemName]: this.items[this.activeItemName]};
   }
 }

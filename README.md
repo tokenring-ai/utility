@@ -1,8 +1,8 @@
-@token-ring/utility
+@tokenring-ai/utility
 
 Overview
 
-- @token-ring/utility is a small collection of general-purpose helpers used across the Token Ring ecosystem. It
+- @tokenring-ai/utility is a small collection of general-purpose helpers used across the Token Ring ecosystem. It
   includes:
 - Promise handling helper to intentionally ignore outcomes without unhandled rejection noise.
 - A lightweight in-memory cache with optional TTL and a singleton instance for convenience.
@@ -29,17 +29,17 @@ Exports
 
 - package.json declares: "exports": { "./*": "./src/*.ts" }
 - Import from subpaths, for example:
-- import { abandon } from "@token-ring/utility/abandon";
-- import cache, { Cache } from "@token-ring/utility/cache";
-- import formatLogMessages from "@token-ring/utility/formatLogMessage";
-- import { infoLine, successLine, errorLine, warningLine } from "@token-ring/utility/prettyString";
-- import { shellEscape } from "@token-ring/utility/shellEscape";
+- import { abandon } from "@tokenring-ai/utility/abandon";
+- import cache, { Cache } from "@tokenring-ai/utility/cache";
+- import formatLogMessages from "@tokenring-ai/utility/formatLogMessage";
+- import { infoLine, successLine, errorLine, warningLine } from "@tokenring-ai/utility/prettyString";
+- import { shellEscape } from "@tokenring-ai/utility/shellEscape";
 
 Installation
 This package is part of the Token Ring monorepo and is typically consumed within the workspace. If you need to depend on
 it directly, add it to your dependencies:
 
-- "@token-ring/utility": "0.1.0"
+- "@tokenring-ai/utility": "0.1.0"
 
 Usage examples
 
@@ -49,7 +49,7 @@ abandon
 - Purpose: Avoid unhandled promise rejection warnings when you intentionally don’t care about a promise’s outcome.
   Example:
 
-import { abandon } from "@token-ring/utility/abandon";
+import { abandon } from "@tokenring-ai/utility/abandon";
 
 const p = fetch("https://example.com/api");
 abandon(p); // consume resolution/rejection quietly
@@ -60,7 +60,7 @@ Cache and cache singleton
 - Purpose: Quick in-memory caching with optional TTL per key.
   Example:
 
-import cache, { Cache } from "@token-ring/utility/cache";
+import cache, { Cache } from "@tokenring-ai/utility/cache";
 
 // Use the singleton for convenience
 await cache.getOrSet("user:42", async () => {
@@ -79,7 +79,7 @@ formatLogMessages
 - Purpose: Stringify mixed values (including Error objects) into a readable single string.
   Example:
 
-import formatLogMessages from "@token-ring/utility/formatLogMessage";
+import formatLogMessages from "@tokenring-ai/utility/formatLogMessage";
 
 const output = formatLogMessages([
 "User loaded",
@@ -94,7 +94,7 @@ Pretty string helpers
 - Purpose: Colorize strings for terminal output (adds a trailing newline).
   Example:
 
-import { infoLine, successLine, errorLine, warningLine } from "@token-ring/utility/prettyString";
+import { infoLine, successLine, errorLine, warningLine } from "@tokenring-ai/utility/prettyString";
 
 process.stdout.write(infoLine("Starting…"));
 process.stdout.write(successLine("Done"));
@@ -107,7 +107,7 @@ shellEscape
 - Purpose: Escape a string for safe inclusion in shell commands.
   Example:
 
-import { shellEscape } from "@token-ring/utility/shellEscape";
+import { shellEscape } from "@tokenring-ai/utility/shellEscape";
 
 const file = "my file's name.txt";
 const cmd = `cat ${shellEscape(file)}`;

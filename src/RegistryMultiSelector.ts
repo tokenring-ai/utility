@@ -1,21 +1,28 @@
+import KeyedRegistry from "./KeyedRegistry.js";
 
-export default class GenericMultipleRegistry<T = any> {
-  private items: Record<string, T> = {};
+export default class RegistryMultiSelector<T = any> {
+  readonly getItemByName: (name: string) => T | undefined;
+  readonly getAllItemNames: () => string[];
+  readonly getAllItems: () => Record<string, T>;
+  private readonly registry: KeyedRegistry<T>;
   private activeItemNames: Set<string> = new Set();
 
-  register = (name: string, resource: T) => {
-    this.items[name] = resource;
+  constructor(registry: KeyedRegistry<T>) {
+    this.registry = registry;
+    this.getItemByName = this.registry.getItemByName;
+    this.getAllItemNames = this.registry.getAllItemNames;
+    this.getAllItems = this.registry.getAllItems;
   }
 
   getActiveItemNames = (): Set<string> => {
     return this.activeItemNames;
   }
 
-  enableItem = (...names: string[]): void => {
+  enableItems = (...names: string[]): void => {
     for (const name of names) {
       if (name.endsWith('*')) {
         const prefix = name.slice(0, -1);
-        const matchingItems = Object.keys(this.items).filter(itemName => itemName.startsWith(prefix));
+        const matchingItems = this.registry.getAllItemNames().filter(itemName => itemName.startsWith(prefix));
         if (matchingItems.length === 0) {
           throw new Error(`Couldn't enable ${name}: no items found matching prefix`);
         }
@@ -23,7 +30,7 @@ export default class GenericMultipleRegistry<T = any> {
           this.activeItemNames.add(matchingItem);
         }
       } else {
-        if (!this.items[name]) {
+        if (!this.registry.getItemByName(name)) {
           throw new Error(`Couldn't enable ${name}: not found`);
         }
         this.activeItemNames.add(name);
@@ -31,11 +38,11 @@ export default class GenericMultipleRegistry<T = any> {
     }
   }
 
-  disableItem = (...names: string[]): void => {
+  disableItems = (...names: string[]): void => {
     for (const name of names) {
       if (name.endsWith('*')) {
         const prefix = name.slice(0, -1);
-        const matchingItems = Object.keys(this.items).filter(itemName => itemName.startsWith(prefix));
+        const matchingItems = this.registry.getAllItemNames().filter(itemName => itemName.startsWith(prefix));
         if (matchingItems.length === 0) {
           throw new Error(`Couldn't disable ${name}: no items found matching prefix`);
         }
@@ -43,7 +50,7 @@ export default class GenericMultipleRegistry<T = any> {
           this.activeItemNames.delete(matchingItem);
         }
       } else {
-        if (!this.items[name]) {
+        if (!this.registry.getItemByName(name)) {
           throw new Error(`Couldn't disable ${name}: not found`);
         }
         this.activeItemNames.delete(name);
@@ -57,13 +64,13 @@ export default class GenericMultipleRegistry<T = any> {
     for (const name of names) {
       if (name.endsWith('*')) {
         const prefix = name.slice(0, -1);
-        const matchingItems = Object.keys(this.items).filter(itemName => itemName.startsWith(prefix));
+        const matchingItems = this.registry.getAllItemNames().filter(itemName => itemName.startsWith(prefix));
         if (matchingItems.length === 0) {
           throw new Error(`Couldn't set enabled items with ${name}: no items found matching prefix`);
         }
         resolvedNames.push(...matchingItems);
       } else {
-        if (!this.items[name]) {
+        if (!this.registry.getItemByName(name)) {
           throw new Error(`Couldn't set enabled items with ${name}: not found`);
         }
         resolvedNames.push(name);
@@ -73,19 +80,12 @@ export default class GenericMultipleRegistry<T = any> {
     this.activeItemNames = new Set(resolvedNames);
   }
 
-  getItemByName = (name: string): T => {
-    if (! this.activeItemNames.has(name)) throw new Error(`Item ${name} not enabled`);
-    return this.items[name];
-  }
-
-  getAllItemNames = (): string[] => {
-    return Object.keys(this.items);
-  }
-
   getActiveItemEntries = (): Record<string, T> => {
     const ret: Record<string, T> = {};
     for (const name of this.activeItemNames) {
-      ret[name] = this.items[name];
+      const item = this.getItemByName(name);
+      if (item) ret[name] = item;
+      else throw new Error(`Couldn't get activeItem entries for ${name}`);
     }
     return ret;
   }

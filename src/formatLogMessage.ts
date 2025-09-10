@@ -1,7 +1,7 @@
 /**
  * Formats log messages similar to console.log, with special handling for errors
  */
-export default function formatLogMessages(msgs: unknown[]): string {
+export default function formatLogMessages(msgs: (string | Error)[]): string {
   return msgs
     .map((msg) => {
       // Special handling for Error objects to include stack trace

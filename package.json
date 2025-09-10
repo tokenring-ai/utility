@@ -1,8 +1,8 @@
 {
- "name": "@token-ring/utility",
+ "name": "@tokenring-ai/utility",
  "version": "0.1.0",
  "dependencies": {
-  "@token-ring/registry": "0.1.0"
+  "@tokenring-ai/agent": "0.1.0"
  },
  "exports": {
   "./*": "./src/*.ts"
