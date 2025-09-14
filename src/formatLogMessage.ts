@@ -12,7 +12,7 @@ export default function formatLogMessages(msgs: (string | Error)[]): string {
           stack: msg.stack,
           toString: () => `${msg.name}: ${msg.message}\n${msg.stack ?? ""}`,
         };
-        return shaped as unknown as string;
+        return shaped as unknown;
       }
 
       // Handle objects and arrays with proper formatting
@@ -23,7 +23,7 @@ export default function formatLogMessages(msgs: (string | Error)[]): string {
             ...(msg as Record<string, unknown>),
             toString: () => JSON.stringify(msg, null, 2),
           };
-          return shaped as unknown as string;
+          return shaped as unknown;
         } catch (_err) {
           return String(msg); // Fallback if JSON stringification fails
         }
