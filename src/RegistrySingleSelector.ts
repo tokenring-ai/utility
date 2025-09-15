@@ -9,6 +9,7 @@ export default class RegistrySingleSelector<T = any> {
 
   constructor(registry: KeyedRegistry<T>) {
     this.registry = registry;
+   
     this.getItemByName = this.registry.getItemByName;
     this.getAllItemNames = this.registry.getAllItemNames;
     this.getAllItems = this.registry.getAllItems;
