@@ -1,16 +1,3 @@
-export interface KeyedRegistryInterface<T> {
-  register(name: string, resource: T): void;
-
-  unregister(name: string): void;
-
-  getItemByName(name: string): T | undefined;
-
-  getAllItemNames(): string[];
-
-  getAllItems(): Record<string, T>;
-}
-
-
 export default class KeyedRegistry<T = any> {
   protected items: Record<string, T> = {};
 
@@ -27,11 +14,23 @@ export default class KeyedRegistry<T = any> {
     return this.items[name];
   }
 
+  requireItemByName = (name: string): T => {
+    const item = this.getItemByName(name);
+    if (!item) {
+      throw new Error(`Item ${name} not found`);
+    }
+    return item;
+  }
+
   getAllItemNames = (): string[] => {
     return Object.keys(this.items);
   }
 
   getAllItems = (): Record<string, T> => this.items;
+
+  getAllItemValues = (): T[] => {
+    return Object.values(this.items);
+  }
 
   clone() {
     const myClone = new KeyedRegistry<T>()
