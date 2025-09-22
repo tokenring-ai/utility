@@ -1,33 +1,33 @@
 //type ConstructedTypeOf<ClassType> = abstract new (...args: any[]) => ClassType;
 
-export default class TypedRegistry<ClassType = any> {
-  protected items = new Set<ClassType>()
+import KeyedRegistry from "./KeyedRegistry.js";
+
+export interface NamedClass {
+  name: string;
+}
 
 
-  register = (...items: ClassType[] | ClassType[][]) => {
-    for (const item of items.flat() as ClassType[]) {
-      this.items.add(item);
+export default class TypedRegistry<MinimumType extends NamedClass> {
+  protected registry = new KeyedRegistry<MinimumType>();
+  getItems = this.registry.getAllItemValues;
+
+  register = (...items: MinimumType[] | MinimumType[][]) => {
+    for (const item of items.flat() as MinimumType[]) {
+      this.registry.register(item.name, item);
     }
   }
 
-
-  getItems = (): ClassType[] => {
-    return Array.from(this.items);
+  unregister = (...items: MinimumType[]) => {
+    for (const item of items) {
+      this.registry.unregister(item.name);
+    }
   }
 
-  getItemsByType = <R extends ClassType>(type: abstract new (...args: any[]) => R): R[] => {
-    return Array.from(this.items).filter(
-      (service) => service instanceof type
-    ) as R[];
+  getItemByType = <R extends MinimumType>(type: abstract new (...args: any[]) => R): R | undefined => {
+    return this.registry.getItemByName(type.name) as R | undefined;
   }
 
-  getFirstItemByType = <R extends ClassType>(type: abstract new (...args: any[]) => R): R | undefined => {
-    return this.getItemsByType(type)?.[0];
-  }
-
-  requireFirstItemByType = <R extends ClassType>(type: abstract new (...args: any[]) => R): R => {
-    const ret = this.getFirstItemByType(type);
-    if (!ret) throw new Error(`Cannot find a service of type: ${type}`);
-    return ret;
+  requireItemByType = <R extends MinimumType>(type: abstract new (...args: any[]) => R): R => {
+    return this.registry.requireItemByName(type.name) as R;
   }
 }
