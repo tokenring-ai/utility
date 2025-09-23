@@ -19,6 +19,16 @@ export default class RegistryMultiSelector<T = any> {
     return this.activeItemNames;
   }
 
+  hasItemLike = (name: string|RegExp|((name: string) => boolean)): boolean => {
+    if (name instanceof RegExp) {
+      return this.registry.getAllItemNames().some(itemName => name.test(itemName));
+    } else if (typeof name === 'function') {
+      return this.registry.getAllItemNames().some(itemName => name(itemName));
+    } else {
+      return this.registry.getAllItemNames().some(itemName => itemName.includes(name));
+    }
+  }
+
   enableItems = (...names: string[]): void => {
     for (const name of names) {
       if (name.endsWith('*')) {
