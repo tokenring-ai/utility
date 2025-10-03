@@ -1,14 +1,13 @@
 {
- "name": "@tokenring-ai/utility",
- "version": "0.1.0",
- "dependencies": {
-  "@tokenring-ai/agent": "0.1.0"
- },
- "exports": {
-  "./*": "./src/*.ts"
- },
- "license": "MIT",
- "scripts": {
- },
- "type": "module"
+	"name": "@tokenring-ai/utility",
+	"version": "0.1.0",
+	"dependencies": {
+		"@tokenring-ai/agent": "0.1.0"
+	},
+	"exports": {
+		"./*": "./src/*.ts"
+	},
+	"license": "MIT",
+	"scripts": {},
+	"type": "module"
 }
