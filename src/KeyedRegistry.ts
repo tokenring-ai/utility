@@ -1,15 +1,37 @@
 export default class KeyedRegistry<T = any> {
-	protected items: Record<string, T> = {};
+  protected items: Record<string, T> = {};
+  private subscribers: Map<string, ((item: T) => void)[]> = new Map();
 
-	register = (name: string, resource: T) => {
-		this.items[name] = resource;
-	};
+  register = (name: string, resource: T) => {
+    this.items[name] = resource;
 
-	unregister = (name: string) => {
-		delete this.items[name];
-	};
+    // Notify any waiting subscribers
+    const itemSubscribers = this.subscribers.get(name);
+    if (itemSubscribers) {
+      itemSubscribers.forEach(callback => callback(resource));
+      this.subscribers.delete(name);
+    }
+  };
 
-	getItemByName = (name: string): T | undefined => {
+  unregister = (name: string) => {
+    delete this.items[name];
+  };
+
+  waitForItemByName = async (name: string): Promise<T> => {
+    // If item already exists, return it immediately
+    if (this.items[name]) {
+      return this.items[name];
+    }
+
+    // Otherwise, subscribe and wait for registration
+    return new Promise<T>((resolve) => {
+      const subscribers = this.subscribers.get(name) || [];
+      subscribers.push(resolve);
+      this.subscribers.set(name, subscribers);
+    });
+  };
+
+  getItemByName = (name: string): T | undefined => {
 		return this.items[name];
 	};
 
