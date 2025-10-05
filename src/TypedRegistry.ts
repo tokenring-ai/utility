@@ -22,13 +22,13 @@ export default class TypedRegistry<MinimumType extends NamedClass> {
 		}
 	};
 
-  waitForItemByType = <R extends MinimumType>(
-    type: abstract new (...args: any[]) => R,
-  ): Promise<R> => {
-    return this.registry.waitForItemByName(type.name) as Promise<R>;
-  };
+	waitForItemByType = <R extends MinimumType>(
+		type: abstract new (...args: any[]) => R,
+	): Promise<R> => {
+		return this.registry.waitForItemByName(type.name) as Promise<R>;
+	};
 
-  getItemByType = <R extends MinimumType>(
+	getItemByType = <R extends MinimumType>(
 		type: abstract new (...args: any[]) => R,
 	): R | undefined => {
 		return this.registry.getItemByName(type.name) as R | undefined;
