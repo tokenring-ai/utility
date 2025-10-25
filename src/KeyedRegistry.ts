@@ -43,7 +43,15 @@ export default class KeyedRegistry<T = any> {
 		return item;
 	};
 
-	getAllItemNames = (): string[] => {
+  ensureItems = (names: string[]) => {
+    for (const name of names) {
+      if (!this.items[name]) {
+        throw new Error(`Item ${name} not found in ${this.getAllItemNames().join(",")}`);
+      }
+    }
+  }
+
+  getAllItemNames = (): string[] => {
 		return Object.keys(this.items);
 	};
 
@@ -53,7 +61,37 @@ export default class KeyedRegistry<T = any> {
 		return Object.values(this.items);
 	};
 
-	registerAll(items: Record<string, T>) {
+
+  getItemNamesLike = (likeName: string) => {
+    if (likeName.endsWith("*")) {
+      const prefix = likeName.slice(0, -1);
+      return Object.keys(this.items)
+        .filter(itemName => itemName.startsWith(prefix));
+    } else {
+      return this.items[likeName] ? [likeName] : [];
+    }
+  }
+
+  ensureItemNamesLike = (likeName: string) => {
+    const matchingItems = this.getItemNamesLike(likeName);
+    if (matchingItems.length === 0) {
+      throw new Error(
+        `Couldn't enable ${likeName}: no items found matching prefix`,
+      );
+    }
+    return matchingItems;
+  }
+
+  forEach = (callback: (key: string, item: T) => void) => {
+    for (const key in this.items) {
+      callback(key, this.items[key]);
+    }
+  }
+
+  entries = () => Object.entries(this.items);
+
+
+  registerAll(items: Record<string, T>) {
 		for (const name in items) {
 			this.register(name, items[name]);
 		}
