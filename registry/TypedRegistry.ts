@@ -1,5 +1,6 @@
 //type ConstructedTypeOf<ClassType> = abstract new (...args: any[]) => ClassType;
 
+
 import KeyedRegistry from "./KeyedRegistry.js";
 
 export interface NamedClass {
