@@ -5,7 +5,7 @@
   "@tokenring-ai/agent": "0.1.0"
  },
  "exports": {
-  "./*": "./src/*.ts"
+  "./*": "./*.ts"
  },
  "license": "MIT",
  "scripts": {},
