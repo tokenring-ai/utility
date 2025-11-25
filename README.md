@@ -1,125 +1,345 @@
-@tokenring-ai/utility
+# @tokenring-ai/utility
 
-Overview
+A comprehensive collection of general-purpose utility functions and classes used across the Token Ring ecosystem. This package provides reusable helpers for common programming tasks including object manipulation, string processing, HTTP operations, promise handling, and registry management.
 
-- @tokenring-ai/utility is a small collection of general-purpose helpers used across the Token Ring ecosystem. It
-  includes:
-- Promise handling helper to intentionally ignore outcomes without unhandled rejection noise.
-- A lightweight in-memory cache with optional TTL and a singleton instance for convenience.
-- Log message formatting that stringifies mixed values and errors in a readable way.
-- Pretty string helpers for colored terminal output.
-- A safe shell argument escaper.
+## Overview
 
-What this package offers
+The `@tokenring-ai/utility` package is designed to be a small, focused library of utilities that can be used across multiple projects within the Token Ring ecosystem. It's built with TypeScript and provides type-safe utilities for common development tasks.
 
-- Promise utilities
-- abandon(promise): safely consume a promise’s resolution/rejection to avoid unhandled rejection warnings.
-- Caching
-- Cache<V>: a simple, generic in-memory cache with optional TTL per entry.
-- default export: a singleton cache instance.
-- Logging helpers
-- formatLogMessages(msgs: unknown[]): produce a single string similar to console.log behavior with special Error
-  handling.
-- Terminal string helpers
-- infoLine, successLine, errorLine, warningLine: wrap a string with ANSI colors and newline.
-- Shell utilities
-- shellEscape(arg: string): safely escape a string for posix-like shells.
+## Installation
 
-Exports
+This package is part of the Token Ring monorepo and is typically consumed within the workspace. If you need to depend on it directly, add it to your dependencies:
 
-- package.json declares: "exports": { "./*": "./src/*.ts" }
-- Import from subpaths, for example:
-- import { abandon } from "@tokenring-ai/utility/abandon";
-- import cache, { Cache } from "@tokenring-ai/utility/cache";
-- import formatLogMessages from "@tokenring-ai/utility/formatLogMessage";
-- import { infoLine, successLine, errorLine, warningLine } from "@tokenring-ai/utility/prettyString";
-- import { shellEscape } from "@tokenring-ai/utility/shellEscape";
+```bash
+npm install @tokenring-ai@utility
+```
 
-Installation
-This package is part of the Token Ring monorepo and is typically consumed within the workspace. If you need to depend on
-it directly, add it to your dependencies:
+Or add to your `package.json`:
 
-- "@tokenring-ai/utility": "0.1.0"
+```json
+{
+  "dependencies": {
+    "@tokenring-ai/utility": "0.1.0"
+  }
+}
+```
 
-Usage examples
+## Package Structure
 
-abandon
+The package is organized into logical modules:
 
-- File: pkg/utility/src/abandon.ts
-- Purpose: Avoid unhandled promise rejection warnings when you intentionally don’t care about a promise’s outcome.
-  Example:
+- **Object utilities** (`object/`) - Object manipulation functions
+- **String utilities** (`string/`) - String processing and formatting functions
+- **HTTP utilities** (`http/`) - HTTP client helpers with retry logic
+- **Promise utilities** (`promise/`) - Promise handling utilities
+- **Registry utilities** (`registry/`) - Registry and selector classes
+- **Type definitions** (`types.ts`) - Common type definitions
 
-import { abandon } from "@tokenring-ai/utility/abandon";
+## API Documentation
 
-const p = fetch("https://example.com/api");
-abandon(p); // consume resolution/rejection quietly
+### Object Utilities
 
-Cache and cache singleton
+#### `pick<T, K>(obj: T, keys: K[]): Pick<T, K>`
+Creates an object composed of the picked object properties.
 
-- File: pkg/utility/src/cache.ts
-- Purpose: Quick in-memory caching with optional TTL per key.
-  Example:
+```typescript
+import pick from '@tokenring-ai/utility/object/pick';
 
-import cache, { Cache } from "@tokenring-ai/utility/cache";
+const user = { id: 1, name: 'Alice', email: 'alice@example.com' };
+const userInfo = pick(user, ['id', 'name']);
+// { id: 1, name: 'Alice' }
+```
 
-// Use the singleton for convenience
-await cache.getOrSet("user:42", async () => {
-const user = await loadUserFromDb(42);
-return user;
-}, 5_000); // cache for 5 seconds
+#### `omit<T, K>(obj: T, keys: K[]): Omit<T, K>`
+Creates an object composed of the properties not included in the given keys array.
 
-// Or create an isolated cache
-const local = new Cache<number>();
-local.set("answer", 42, 1_000);
-console.log(local.get("answer")); // 42
+```typescript
+import omit from '@tokenring-ai/utility/object/omit';
 
-formatLogMessages
+const user = { id: 1, name: 'Alice', email: 'alice@example.com' };
+const publicInfo = omit(user, ['email']);
+// { id: 1, name: 'Alice' }
+```
 
-- File: pkg/utility/src/formatLogMessage.ts
-- Purpose: Stringify mixed values (including Error objects) into a readable single string.
-  Example:
+#### `transform<T, R>(obj: T, transformer: (value: T[keyof T], key: keyof T) => R): { [K in keyof T]: R }`
+Transforms an object's values using a transformer function.
 
-import formatLogMessages from "@tokenring-ai/utility/formatLogMessage";
+```typescript
+import transform from '@tokenring-ai/utility/object/transform';
+
+const config = { port: 3000, host: 'localhost' };
+const stringConfig = transform(config, (value) => String(value));
+// { port: '3000', host: 'localhost' }
+```
+
+#### `requireFields<T>(obj: T, required: (keyof T)[], context?: string)`
+Validates that required fields exist in an object.
+
+```typescript
+import requireFields from '@tokenring-ai/utility/object/requireFields';
+
+const config = { port: 3000 };
+requireFields(config, ['port', 'host'], 'ServerConfig');
+// Throws: ServerConfig: Missing required field "host"
+```
+
+### String Utilities
+
+#### `convertBoolean(text: string | null | undefined): boolean`
+Converts string representations to boolean values.
+
+```typescript
+import convertBoolean from '@tokenring-ai/utility/string/convertBoolean';
+
+convertBoolean('true');   // true
+convertBoolean('yes');    // true
+convertBoolean('1');      // true
+convertBoolean('false');  // false
+convertBoolean('no');     // false
+convertBoolean('0');      // false
+```
+
+#### `trimMiddle(str: string, startLength: number, endLength: number): string`
+Truncates the middle of a string, keeping the beginning and end.
+
+```typescript
+import trimMiddle from '@tokenring-ai/utility/string/trimMiddle';
+
+trimMiddle('abcdefghijklmnopqrstuvwxyz', 5, 5);
+// 'abcde...vwxyz'
+```
+
+#### `shellEscape(arg: string): string`
+Safely escapes a string for use in shell commands.
+
+```typescript
+import { shellEscape } from '@tokenring-ai/utility/string/shellEscape';
+
+const filename = "my file's name.txt";
+const command = `cat ${shellEscape(filename)}`;
+// "cat 'my file'\\''s name.txt'"
+```
+
+#### `prettyString` utilities
+Colorized terminal output helpers:
+
+```typescript
+import { infoLine, successLine, errorLine, warningLine } from '@tokenring-ai/utility/string/prettyString';
+
+process.stdout.write(infoLine('Starting service...'));
+process.stdout.write(successLine('Service started successfully'));
+process.stdout.write(warningLine('Service is running in development mode'));
+process.stdout.write(errorLine('Service failed to start'));
+```
+
+#### `joinDefault<T>(separator: string, iterable: Iterable<string> | null | undefined, defaultValue?: T): string | T`
+Joins strings with a separator, providing a default value if the iterable is empty.
+
+```typescript
+import joinDefault from '@tokenring-ai/utility/string/joinDefault';
+
+joinDefault(', ', ['a', 'b', 'c']);       // 'a, b, c'
+joinDefault(', ', null, 'default');       // 'default'
+joinDefault(', ', ['single']);            // 'single'
+```
+
+#### `formatLogMessages(msgs: (string | Error)[]): string`
+Formats log messages similar to console.log with special handling for errors.
+
+```typescript
+import formatLogMessages from '@tokenring-ai/utility/string/formatLogMessage';
 
 const output = formatLogMessages([
-"User loaded",
-{ id: 1, name: "Ada" },
-new Error("Oops")
+  'User loaded',
+  { id: 1, name: 'Alice' },
+  new Error('Connection failed')
 ]);
-console.log(output);
+```
 
-Pretty string helpers
+### HTTP Utilities
 
-- File: pkg/utility/src/prettyString.ts
-- Purpose: Colorize strings for terminal output (adds a trailing newline).
-  Example:
+#### `HttpService` (abstract base class)
+Base class for HTTP services with automatic JSON parsing and error handling.
 
-import { infoLine, successLine, errorLine, warningLine } from "@tokenring-ai/utility/prettyString";
+```typescript
+import { HttpService } from '@tokenring-ai/utility/http/HttpService';
 
-process.stdout.write(infoLine("Starting…"));
-process.stdout.write(successLine("Done"));
-process.stdout.write(warningLine("Careful"));
-process.stdout.write(errorLine("Something went wrong"));
+export class MyApiService extends HttpService {
+  protected baseUrl = 'https://api.example.com';
+  protected defaultHeaders = { 'Content-Type': 'application/json' };
 
-shellEscape
+  async getUser(id: string) {
+    return this.fetchJson(`/users/${id}`, {}, 'getUser');
+  }
+}
+```
 
-- File: pkg/utility/src/shellEscape.ts
-- Purpose: Escape a string for safe inclusion in shell commands.
-  Example:
+#### `doFetchWithRetry(url: string, init?: RequestInit): Promise<Response>`
+Fetch with automatic retry logic for network errors and rate limiting.
 
-import { shellEscape } from "@tokenring-ai/utility/shellEscape";
+```typescript
+import { doFetchWithRetry } from '@tokenring-ai/utility/http/doFetchWithRetry';
 
-const file = "my file's name.txt";
-const cmd = `cat ${shellEscape(file)}`;
-// Produces: cat 'my file'\''s name.txt'
+const response = await doFetchWithRetry('https://api.example.com/data', {
+  method: 'GET'
+});
+```
 
-Notes
+### Promise Utilities
 
-- TTL logic in Cache cleans up expired entries on access and via a setTimeout scheduled at set() time.
-- formatLogMessages returns a string; when given objects, it includes a toString that JSON stringifies them where
-  possible, and for Error includes name, message, and stack.
-- prettyString helpers add a newline at the end and use standard ANSI color codes.
+#### `abandon<T>(promise: Promise<T>): void`
+Intentionally abandons a promise to prevent unhandled rejection warnings.
 
-License
+```typescript
+import { abandon } from '@tokenring-ai/utility/promise/abandon';
 
-- MIT (same as the repository license).
+const fetchPromise = fetch('https://api.example.com/data');
+abandon(fetchPromise); // Consume resolution/rejection quietly
+```
+
+### Registry Utilities
+
+#### `KeyedRegistry<T>`
+A generic registry for storing and retrieving items by string keys.
+
+```typescript
+import KeyedRegistry from '@tokenring-ai/utility/registry/KeyedRegistry';
+
+const registry = new KeyedRegistry<string>();
+registry.register('db', 'postgresql://localhost:5432');
+registry.register('cache', 'redis://localhost:6379');
+
+const dbUrl = registry.getItemByName('db');
+// 'postgresql://localhost:5432'
+```
+
+#### `TypedRegistry<T extends NamedClass>`
+Registry for classes with a `name` property.
+
+```typescript
+import TypedRegistry from '@tokenring-ai/utility/registry/TypedRegistry';
+
+class Database {
+  static name = 'database';
+  connect() { /* ... */ }
+}
+
+class Cache {
+  static name = 'cache';
+  connect() { /* ... */ }
+}
+
+const registry = new TypedRegistry();
+registry.register(Database, Cache);
+
+const db = registry.getItemByType(Database);
+```
+
+#### `RegistrySingleSelector<T>` and `RegistryMultiSelector<T>`
+Registry selectors for managing single or multiple active items.
+
+```typescript
+import RegistrySingleSelector from '@tokenring-ai/utility/registry/RegistrySingleSelector';
+import RegistryMultiSelector from '@tokenring-ai/utility/registry/RegistryMultiSelector';
+
+const singleSelector = new RegistrySingleSelector(registry);
+singleSelector.setEnabledItem('database');
+
+const multiSelector = new RegistryMultiSelector(registry);
+multiSelector.enableItems('database', 'cache');
+```
+
+### Type Definitions
+
+#### `PrimitiveType`
+Type representing primitive JavaScript types.
+
+```typescript
+import { PrimitiveType } from '@tokenring-ai/utility/types';
+
+const value: PrimitiveType = 'string'; // or number, boolean, null, undefined
+```
+
+## Usage Examples
+
+### Basic Object Manipulation
+
+```typescript
+import { pick, omit, transform } from '@tokenring-ai/utility/object';
+
+const user = {
+  id: 1,
+  name: 'Alice',
+  email: 'alice@example.com',
+  password: 'secret'
+};
+
+// Pick specific fields
+const publicUser = pick(user, ['id', 'name']);
+// { id: 1, name: 'Alice' }
+
+// Remove sensitive fields
+const safeUser = omit(user, ['password']);
+// { id: 1, name: 'Alice', email: 'alice@example.com' }
+
+// Transform values
+const stringifiedUser = transform(user, (value) => String(value));
+// { id: '1', name: 'Alice', email: 'alice@example.com', password: 'secret' }
+```
+
+### HTTP Service Example
+
+```typescript
+import { HttpService } from '@tokenring-ai/utility/http/HttpService';
+
+class UserService extends HttpService {
+  protected baseUrl = 'https://api.example.com';
+  protected defaultHeaders = {
+    'Authorization': 'Bearer token',
+    'Content-Type': 'application/json'
+  };
+
+  async getUser(id: string) {
+    return this.fetchJson(`/users/${id}`, {}, 'getUser');
+  }
+
+  async createUser(userData: any) {
+    return this.fetchJson('/users', {
+      method: 'POST',
+      body: JSON.stringify(userData)
+    }, 'createUser');
+  }
+}
+```
+
+### Registry Pattern Example
+
+```typescript
+import { KeyedRegistry, RegistrySingleSelector } from '@tokenring-ai/utility/registry';
+
+// Create a registry for database connections
+const dbRegistry = new KeyedRegistry<DatabaseConnection>();
+
+// Register different database implementations
+dbRegistry.register('postgres', new PostgresConnection());
+dbRegistry.register('mysql', new MySqlConnection());
+
+// Use a selector to manage active database
+const dbSelector = new RegistrySingleSelector(dbRegistry);
+dbSelector.setEnabledItem('postgres');
+
+// Get the active database
+const activeDb = dbSelector.getActiveItem();
+```
+
+## Dependencies
+
+- `@tokenring-ai/agent` ^0.1.0
+
+## License
+
+MIT License - see the LICENSE file for details.
+
+## Contributing
+
+This package is part of the Token Ring monorepo. Please follow the contribution guidelines in the main repository when making changes to this package.
