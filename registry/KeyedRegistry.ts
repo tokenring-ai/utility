@@ -91,15 +91,9 @@ export default class KeyedRegistry<T = any> {
   entries = () => Object.entries(this.items);
 
 
-  registerAll(items: Record<string, T>) {
+  registerAll = (items: Record<string, T>) => {
     for (const name in items) {
       this.register(name, items[name]);
     }
-  }
-
-  clone() {
-    const myClone = new KeyedRegistry<T>();
-    myClone.items = {...this.items};
-    return myClone;
   }
 }

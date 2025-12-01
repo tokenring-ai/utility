@@ -40,4 +40,12 @@ export default class TypedRegistry<MinimumType extends NamedClass> {
   ): R => {
     return this.registry.requireItemByName(type.name) as R;
   };
+
+  getItemByName = (name: string) : MinimumType | undefined => {
+    return this.registry.getItemByName(name);
+  }
+
+  requireItemByName = (name: string) : MinimumType => {
+    return this.registry.requireItemByName(name);
+  }
 }
