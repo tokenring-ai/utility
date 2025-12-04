@@ -17,18 +17,16 @@ export default class KeyedRegistry<T = any> {
     delete this.items[name];
   };
 
-  waitForItemByName = async (name: string): Promise<T> => {
+  waitForItemByName = (name: string, callback: (item: T) => void) : void => {
     // If item already exists, return it immediately
     if (this.items[name]) {
-      return this.items[name];
+      callback(this.items[name]);
     }
 
     // Otherwise, subscribe and wait for registration
-    return new Promise<T>((resolve) => {
-      const subscribers = this.subscribers.get(name) || [];
-      subscribers.push(resolve);
-      this.subscribers.set(name, subscribers);
-    });
+    const subscribers = this.subscribers.get(name) || [];
+    subscribers.push(callback);
+    this.subscribers.set(name, subscribers);
   };
 
   getItemByName = (name: string): T | undefined => {

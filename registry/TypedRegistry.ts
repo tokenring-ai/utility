@@ -25,9 +25,8 @@ export default class TypedRegistry<MinimumType extends NamedClass> {
 
   waitForItemByType = <R extends MinimumType>(
     type: abstract new (...args: any[]) => R,
-  ): Promise<R> => {
-    return this.registry.waitForItemByName(type.name) as Promise<R>;
-  };
+    callback: (item: R) => void,
+  ): void => this.registry.waitForItemByName(type.name, callback as (item: MinimumType) => void);
 
   getItemByType = <R extends MinimumType>(
     type: abstract new (...args: any[]) => R,
