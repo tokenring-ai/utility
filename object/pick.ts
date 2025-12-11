@@ -9,7 +9,7 @@ export default function pick<T extends object, K extends keyof T>(
   keys: K[]
 ): Pick<T, K> {
   return keys.reduce((acc, key) => {
-    if (key in obj) {
+    if (Object.hasOwn(obj, key)) {
       acc[key] = obj[key];
     }
     return acc;
