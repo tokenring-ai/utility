@@ -5,9 +5,19 @@
     "@tokenring-ai/agent": "0.2.0"
   },
   "exports": {
-    "./*": "./*.ts"
+    "./*": "./*.ts",
+    ".": "./index.ts"
   },
   "license": "MIT",
-  "scripts": {},
-  "type": "module"
+  "scripts": {
+    "test": "vitest run",
+    "build": "tsc --noEmit",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "type": "module",
+  "devDependencies": {
+    "vitest": "catalog:",
+    "typescript": "catalog:"
+  }
 }
