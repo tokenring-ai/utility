@@ -80,6 +80,10 @@ export default class KeyedRegistry<T = any> {
     return matchingItems;
   }
 
+  getItemEntriesLike = (likeName: string) : [string, T][] => {
+    return this.getItemNamesLike(likeName).map(itemName => [itemName, this.items[itemName]]);
+  }
+
   forEach = (callback: (key: string, item: T) => void) => {
     for (const key in this.items) {
       callback(key, this.items[key]);
