@@ -11,7 +11,7 @@ The `@tokenring-ai/utility` package is designed to be a small, focused library o
 This package is part of the Token Ring monorepo and is typically consumed within the workspace. If you need to depend on it directly, add it to your dependencies:
 
 ```bash
-npm install @tokenring-ai@utility
+bun install @tokenring-ai/utility
 ```
 
 Or add to your `package.json`:
@@ -19,7 +19,7 @@ Or add to your `package.json`:
 ```json
 {
   "dependencies": {
-    "@tokenring-ai/utility": "0.1.0"
+    "@tokenring-ai/utility": "^0.2.0"
   }
 }
 ```
@@ -61,7 +61,7 @@ const publicInfo = omit(user, ['email']);
 // { id: 1, name: 'Alice' }
 ```
 
-#### `transform<T, R>(obj: T, transformer: (value: T[keyof T], key: keyof T) => R): { [K in keyof T]: R }`
+#### `transform<T, R>(obj: T, transformer: (value: T[keyof T], key: keyof T) => R): { [K in keyof T]: R}`
 Transforms an object's values using a transformer function.
 
 ```typescript
@@ -72,7 +72,7 @@ const stringConfig = transform(config, (value) => String(value));
 // { port: '3000', host: 'localhost' }
 ```
 
-#### `requireFields<T>(obj: T, required: (keyof T)[], context?: string)`
+#### `requireFields<T>(obj: T, required: (keyof T)[], context?: string): void`
 Validates that required fields exist in an object.
 
 ```typescript
@@ -81,6 +81,17 @@ import requireFields from '@tokenring-ai/utility/object/requireFields';
 const config = { port: 3000 };
 requireFields(config, ['port', 'host'], 'ServerConfig');
 // Throws: ServerConfig: Missing required field "host"
+```
+
+#### `pickValue<T, K extends keyof T>(obj: T, key: K): T[K] | undefined`
+Safely picks a single value from an object.
+
+```typescript
+import pickValue from '@tokenring-ai/utility/object/pickValue';
+
+const user = { id: 1, name: 'Alice' };
+const id = pickValue(user, 'id');
+// 1
 ```
 
 ### String Utilities
@@ -117,19 +128,7 @@ import { shellEscape } from '@tokenring-ai/utility/string/shellEscape';
 
 const filename = "my file's name.txt";
 const command = `cat ${shellEscape(filename)}`;
-// "cat 'my file'\\''s name.txt'"
-```
-
-#### `prettyString` utilities
-Colorized terminal output helpers:
-
-```typescript
-import { infoLine, successLine, errorLine, warningLine } from '@tokenring-ai/utility/string/prettyString';
-
-process.stdout.write(infoLine('Starting service...'));
-process.stdout.write(successLine('Service started successfully'));
-process.stdout.write(warningLine('Service is running in development mode'));
-process.stdout.write(errorLine('Service failed to start'));
+// "cat 'my file'\\\\''s name.txt'"
 ```
 
 #### `joinDefault<T>(separator: string, iterable: Iterable<string> | null | undefined, defaultValue?: T): string | T`
@@ -143,17 +142,39 @@ joinDefault(', ', null, 'default');       // 'default'
 joinDefault(', ', ['single']);            // 'single'
 ```
 
-#### `formatLogMessages(msgs: (string | Error)[]): string`
+#### `formatLogMessage(msgs: (string | Error)[]): string`
 Formats log messages similar to console.log with special handling for errors.
 
 ```typescript
-import formatLogMessages from '@tokenring-ai/utility/string/formatLogMessage';
+import formatLogMessage from '@tokenring-ai/utility/string/formatLogMessage';
 
-const output = formatLogMessages([
+const output = formatLogMessage([
   'User loaded',
   { id: 1, name: 'Alice' },
   new Error('Connection failed')
 ]);
+```
+
+#### `asciiTable(rows: string[][], headers?: string[]): string`
+Creates an ASCII table from array data.
+
+```typescript
+import asciiTable from '@tokenring-ai/utility/string/asciiTable';
+
+const table = asciiTable([
+  ['Name', 'Age', 'Email'],
+  ['Alice', '30', 'alice@example.com'],
+  ['Bob', '25', 'bob@example.com']
+]);
+```
+
+#### `wrapText(text: string, width: number, indent: string = ''): string`
+Wraps text to a specific width with optional indentation.
+
+```typescript
+import wrapText from '@tokenring-ai/utility/string/wrapText';
+
+const wrapped = wrapText('This is a long line of text that needs to be wrapped', 20);
 ```
 
 ### HTTP Utilities
@@ -197,6 +218,19 @@ const fetchPromise = fetch('https://api.example.com/data');
 abandon(fetchPromise); // Consume resolution/rejection quietly
 ```
 
+#### `waitForAbort(signal: AbortSignal, callback: (ev: Event) => Promise<T>): Promise<T>`
+Waits for an AbortSignal to be triggered and resolves a promise with the callback result.
+
+```typescript
+import { waitForAbort } from '@tokenring-ai/utility/promise/waitForAbort';
+
+const controller = new AbortController();
+const signal = controller.signal;
+
+// Wait for abort signal with callback
+await waitForAbort(signal, (ev) => Promise.resolve('aborted'));
+```
+
 ### Registry Utilities
 
 #### `KeyedRegistry<T>`
@@ -235,18 +269,60 @@ registry.register(Database, Cache);
 const db = registry.getItemByType(Database);
 ```
 
-#### `RegistrySingleSelector<T>` and `RegistryMultiSelector<T>`
-Registry selectors for managing single or multiple active items.
+#### `RegistrySingleSelector<T>`
+Registry selector for managing single active items with change notifications.
 
 ```typescript
 import RegistrySingleSelector from '@tokenring-ai/utility/registry/RegistrySingleSelector';
-import RegistryMultiSelector from '@tokenring-ai/utility/registry/RegistryMultiSelector';
 
 const singleSelector = new RegistrySingleSelector(registry);
+singleSelector.on('change', (item) => {
+  console.log('New active item:', item);
+});
+
 singleSelector.setEnabledItem('database');
+```
+
+#### `RegistryMultiSelector<T>`
+Registry selector for managing multiple active items.
+
+```typescript
+import RegistryMultiSelector from '@tokenring-ai/utility/registry/RegistryMultiSelector';
 
 const multiSelector = new RegistryMultiSelector(registry);
+multiSelector.on('change', (items) => {
+  console.log('Active items:', items);
+});
+
 multiSelector.enableItems('database', 'cache');
+```
+
+#### `KeyedRegistryWithSingleSelection<T>`
+Combined registry with single selection support.
+
+```typescript
+import KeyedRegistryWithSingleSelection from '@tokenring-ai/utility/registry/KeyedRegistryWithSingleSelection';
+
+const registry = new KeyedRegistryWithSingleSelection<string>();
+registry.register('db', 'postgresql://localhost:5432');
+registry.selectItem('db');
+
+const selected = registry.getSelected();
+```
+
+#### `KeyedRegistryWithMultipleSelection<T>`
+Combined registry with multiple selection support.
+
+```typescript
+import KeyedRegistryWithMultipleSelection from '@tokenring-ai/utility/registry/KeyedRegistryWithMultipleSelection';
+
+const registry = new KeyedRegistryWithMultipleSelection<string>();
+registry.register('db', 'postgresql://localhost:5432');
+registry.register('cache', 'redis://localhost:6432');
+
+registry.selectItems('db', 'cache');
+
+const selected = registry.getSelected();
 ```
 
 ### Type Definitions
@@ -265,7 +341,7 @@ const value: PrimitiveType = 'string'; // or number, boolean, null, undefined
 ### Basic Object Manipulation
 
 ```typescript
-import { pick, omit, transform } from '@tokenring-ai/utility/object';
+import { pick, omit, transform, pickValue } from '@tokenring-ai/utility/object';
 
 const user = {
   id: 1,
@@ -285,6 +361,42 @@ const safeUser = omit(user, ['password']);
 // Transform values
 const stringifiedUser = transform(user, (value) => String(value));
 // { id: '1', name: 'Alice', email: 'alice@example.com', password: 'secret' }
+
+// Get single value safely
+const id = pickValue(user, 'id');
+// 1
+```
+
+### String Formatting Examples
+
+```typescript
+import { 
+  shellEscape, 
+  joinDefault, 
+  asciiTable, 
+  wrapText,
+  formatLogMessage 
+} from '@tokenring-ai/utility/string';
+
+// Shell escape example
+const filename = "my file's name.txt";
+const command = `rm ${shellEscape(filename)}`;
+// "rm 'my file'\\\\''s name.txt'"
+
+// Join with default
+const items = null;
+const joined = joinDefault(', ', items, 'none');
+// 'none'
+
+// ASCII table
+const table = asciiTable([
+  ['Name', 'Age'],
+  ['Alice', '30'],
+  ['Bob', '25']
+]);
+
+// Text wrapping
+const wrapped = wrapText('This is a long line that needs to be wrapped at 30 characters', 30);
 ```
 
 ### HTTP Service Example
@@ -315,7 +427,11 @@ class UserService extends HttpService {
 ### Registry Pattern Example
 
 ```typescript
-import { KeyedRegistry, RegistrySingleSelector } from '@tokenring-ai/utility/registry';
+import { 
+  KeyedRegistry, 
+  RegistrySingleSelector,
+  KeyedRegistryWithSingleSelection
+} from '@tokenring-ai/utility/registry';
 
 // Create a registry for database connections
 const dbRegistry = new KeyedRegistry<DatabaseConnection>();
@@ -326,15 +442,22 @@ dbRegistry.register('mysql', new MySqlConnection());
 
 // Use a selector to manage active database
 const dbSelector = new RegistrySingleSelector(dbRegistry);
+dbSelector.on('change', (activeDb) => {
+  console.log('Active database changed:', activeDb);
+});
+
 dbSelector.setEnabledItem('postgres');
 
-// Get the active database
-const activeDb = dbSelector.getActiveItem();
+// Alternative: combined registry with selection
+const combinedRegistry = new KeyedRegistryWithSingleSelection<DatabaseConnection>();
+combinedRegistry.register('postgres', new PostgresConnection());
+combinedRegistry.selectItem('postgres');
+const activeDb = combinedRegistry.getSelected();
 ```
 
 ## Dependencies
 
-- `@tokenring-ai/agent` ^0.1.0
+- `@tokenring-ai/agent` ^0.2.0
 
 ## License
 
