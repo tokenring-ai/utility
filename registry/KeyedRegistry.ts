@@ -61,12 +61,14 @@ export default class KeyedRegistry<T = any> {
 
 
   getItemNamesLike = (likeName: string) => {
+    likeName = likeName.toLowerCase();
     if (likeName.endsWith("*")) {
       const prefix = likeName.slice(0, -1);
       return Object.keys(this.items)
-        .filter(itemName => itemName.startsWith(prefix));
+        .filter(itemName => itemName.toLowerCase().startsWith(prefix));
     } else {
-      return this.items[likeName] ? [likeName] : [];
+      return Object.keys(this.items)
+        .filter(itemName => itemName.toLowerCase() === likeName);
     }
   }
 

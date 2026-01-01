@@ -6,21 +6,24 @@
  * @returns A new object with deeply merged properties
  */
 export default function deepMerge<T extends object, S extends object>(
-  target: T,
-  source: S
+  target: T | null | undefined,
+  source: S | null | undefined,
 ): T & S {
+
   const result = { ...target } as any;
 
-  for (const key in source) {
-    if (Object.hasOwn(source, key)) {
-      const sourceValue = source[key];
-      const targetValue = result[key];
+  if (source) {
+    for (const key in source) {
+      if (Object.hasOwn(source, key)) {
+        const sourceValue = source[key];
+        const targetValue = result[key];
 
-      // Check if both values are plain objects
-      if (isPlainObject(targetValue) && isPlainObject(sourceValue)) {
-        result[key] = deepMerge(targetValue, sourceValue);
-      } else {
-        result[key] = sourceValue;
+        // Check if both values are plain objects
+        if (isPlainObject(targetValue) && isPlainObject(sourceValue)) {
+          result[key] = deepMerge(targetValue, sourceValue);
+        } else {
+          result[key] = sourceValue;
+        }
       }
     }
   }
