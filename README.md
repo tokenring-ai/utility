@@ -100,6 +100,40 @@ const id = pickValue(user, 'id');
 // 1
 ```
 
+#### `deepMerge<T extends object, S extends object>(target: T | null | undefined, source: S | null | undefined): T & S`
+
+Deep merges two objects together. Plain objects are recursively merged, while special objects (Date, Array, etc.) are replaced.
+
+```typescript
+import deepMerge from '@tokenring-ai/utility/object/deepMerge';
+
+const configA = { port: 3000, host: 'localhost' };
+const configB = { host: '127.0.0.1', cache: true };
+const merged = deepMerge(configA, configB);
+// { port: 3000, host: '127.0.0.1', cache: true }
+```
+
+#### `parametricObjectFilter(requirements: ParametricObjectRequirements): (obj: Record<string, unknown>) => boolean`
+
+Creates a filter function based on parameter requirements. Supports numeric comparisons (>, <, >=, <=, =) and string equality.
+
+```typescript
+import parametricObjectFilter from '@tokenring-ai/utility/object/parametricObjectFilter';
+
+const filter = parametricObjectFilter({
+  age: '>20',
+  name: 'Alice'
+});
+
+const users = [
+  { name: 'Alice', age: 25 },
+  { name: 'Bob', age: 18 }
+];
+
+const filtered = users.filter(filter);
+// [{ name: 'Alice', age: 25 }]
+```
+
 ### String Utilities
 
 #### `convertBoolean(text: string | null | undefined): boolean`
@@ -166,21 +200,36 @@ const output = formatLogMessages([
 ]);
 ```
 
-#### `asciiTable(rows: string[][], headers?: string[]): string`
+#### `createAsciiTable(data: string[][], options: TableOptions): string`
 
-Creates an ASCII table from array data.
+Generates an ASCII table with wrapping and spacing.
 
 ```typescript
-import asciiTable from '@tokenring-ai/utility/string/asciiTable';
+import { createAsciiTable } from '@tokenring-ai/utility/string/asciiTable';
 
-const table = asciiTable([
-  ['Name', 'Age', 'Email'],
-  ['Alice', '30', 'alice@example.com'],
-  ['Bob', '25', 'bob@example.com']
-]);
+const table = createAsciiTable(
+  [
+    ['Name', 'Age', 'Email'],
+    ['Alice', '30', 'alice@example.com'],
+    ['Bob', '25', 'bob@example.com']
+  ],
+  {
+    columnWidths: [10, 5, 20],
+    padding: 1,
+    grid: true
+  }
+);
 ```
 
-#### `wrapText(text: string, width: number): string[]`
+**TableOptions interface:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `columnWidths` | `number[]` | Array specifying the width of each column |
+| `padding?` | `number` | Optional padding between cell content and borders (default: 0) |
+| `grid?` | `boolean` | Optional flag to enable table borders (default: false) |
+
+#### `wrapText(text: string, maxWidth: number): string[]`
 
 Wraps text into an array of strings based on max width.
 
@@ -208,6 +257,13 @@ export class MyApiService extends HttpService {
   }
 }
 ```
+
+**Methods:**
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `fetchJson` | `fetchJson(path: string, opts: RequestInit, context: string): Promise<any>` | Performs a JSON fetch with automatic retry logic |
+| `parseJsonOrThrow` | `parseJsonOrThrow(res: Response, context: string): Promise<any>` | Parses JSON response or throws an error |
 
 #### `doFetchWithRetry(url: string, init?: RequestInit): Promise<Response>`
 
@@ -281,88 +337,75 @@ const dbUrl = registry.getItemByName('db');
 // 'postgresql://localhost:5432'
 ```
 
-#### `TypedRegistry<T extends NamedClass>`
+**Methods:**
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `register` | `register(name: string, resource: T): void` | Registers an item by name |
+| `unregister` | `unregister(name: string): void` | Unregisters an item by name |
+| `waitForItemByName` | `waitForItemByName(name: string, callback: (item: T) => void): void` | Waits for an item to be registered |
+| `getItemByName` | `getItemByName(name: string): T \| undefined` | Gets an item by name |
+| `requireItemByName` | `requireItemByName(name: string): T` | Gets an item by name or throws |
+| `ensureItems` | `ensureItems(names: string[]): void` | Ensures all items exist |
+| `getAllItemNames` | `getAllItemNames(): string[]` | Gets all registered item names |
+| `getAllItems` | `getAllItems(): Record<string, T>` | Gets all items as a record |
+| `getAllItemValues` | `getAllItemValues(): T[]` | Gets all items as an array |
+| `getItemNamesLike` | `getItemNamesLike(likeName: string): string[]` | Finds items matching a pattern |
+| `ensureItemNamesLike` | `ensureItemNamesLike(likeName: string): string[]` | Finds items matching a pattern or throws |
+| `getItemEntriesLike` | `getItemEntriesLike(likeName: string): [string, T][]` | Gets entries matching a pattern |
+| `forEach` | `forEach(callback: (key: string, item: T) => void): void` | Iterates over all items |
+| `entries` | `entries(): [string, T][]` | Gets all entries |
+| `registerAll` | `registerAll(items: Record<string, T>): void` | Registers multiple items |
+
+**Pattern matching with `getItemNamesLike`:**
+
+The `likeName` parameter supports wildcard patterns:
+- Prefix matching: `'db*'` matches 'database', 'dbconnection', etc.
+- Exact matching: `'db'` matches 'db' exactly
+
+#### `TypedRegistry<MinimumType extends NamedClass>`
 
 Registry for classes with a `name` property.
 
 ```typescript
-import TypedRegistry from '@tokenring-ai/utility/registry/TypedRegistry';
+import TypedRegistry, { NamedClass } from '@tokenring-ai/utility/registry/TypedRegistry';
 
-class Database {
+class Database implements NamedClass {
   static name = 'database';
   connect() { /* ... */ }
 }
 
-class Cache {
+class Cache implements NamedClass {
   static name = 'cache';
   connect() { /* ... */ }
 }
 
-const registry = new TypedRegistry();
+const registry = new TypedRegistry<Database>();
 registry.register(Database, Cache);
 
 const db = registry.getItemByType(Database);
 ```
 
-#### `RegistrySingleSelector<T>`
-
-Registry selector for managing single active items with change notifications.
+**Interface:**
 
 ```typescript
-import RegistrySingleSelector from '@tokenring-ai/utility/registry/RegistrySingleSelector';
-
-const singleSelector = new RegistrySingleSelector(registry);
-singleSelector.on('change', (item) => {
-  console.log('New active item:', item);
-});
-
-singleSelector.setEnabledItem('database');
+interface NamedClass {
+  name: string;
+}
 ```
 
-#### `RegistryMultiSelector<T>`
+**Methods:**
 
-Registry selector for managing multiple active items.
-
-```typescript
-import RegistryMultiSelector from '@tokenring-ai/utility/registry/RegistryMultiSelector';
-
-const multiSelector = new RegistryMultiSelector(registry);
-multiSelector.on('change', (items) => {
-  console.log('Active items:', items);
-});
-
-multiSelector.enableItems('database', 'cache');
-```
-
-#### `KeyedRegistryWithSingleSelection<T>`
-
-Combined registry with single selection support.
-
-```typescript
-import KeyedRegistryWithSingleSelection from '@tokenring-ai/utility/registry/KeyedRegistryWithSingleSelection';
-
-const registry = new KeyedRegistryWithSingleSelection<string>();
-registry.register('db', 'postgresql://localhost:5432');
-registry.selectItem('db');
-
-const selected = registry.getSelected();
-```
-
-#### `KeyedRegistryWithMultipleSelection<T>`
-
-Combined registry with multiple selection support.
-
-```typescript
-import KeyedRegistryWithMultipleSelection from '@tokenring-ai/utility/registry/KeyedRegistryWithMultipleSelection';
-
-const registry = new KeyedRegistryWithMultipleSelection<string>();
-registry.register('db', 'postgresql://localhost:5432');
-registry.register('cache', 'redis://localhost:6432');
-
-registry.selectItems('db', 'cache');
-
-const selected = registry.getSelected();
-```
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `register` | `register(...items: MinimumType[]): void` | Registers items |
+| `unregister` | `unregister(...items: MinimumType[]): void` | Unregisters items |
+| `getItems` | `getItems: MinimumType[]` | Gets all registered items |
+| `waitForItemByType` | `waitForItemByType\<R\>(type: new () => R, callback: (item: R) => void): void` | Waits for item by type |
+| `getItemByType` | `getItemByType\<R\>(type: new () => R): R \| undefined` | Gets item by type |
+| `requireItemByType` | `requireItemByType\<R\>(type: new () => R): R` | Gets item by type or throws |
+| `getItemByName` | `getItemByName(name: string): MinimumType \| undefined` | Gets item by name |
+| `requireItemByName` | `requireItemByName(name: string): MinimumType` | Gets item by name or throws |
 
 ### Timer Utilities
 
@@ -377,8 +420,8 @@ const throttledLog = throttle((message: string) => console.log(message));
 
 // Will only log the first and last calls within 1 second
 throttledLog(1000, 'Log 1');
-throttledLog(1000, 'Log 2');
-throttledLog(1000, 'Log 3');
+throttledLog(1000, 'Log 2'); // Will be ignored
+throttledLog(1000, 'Log 3'); // Will be ignored
 ```
 
 #### `debounce<T extends (...args: any[]) => any>(func: T, delay: number): (...args: Parameters<T>) => void`
@@ -394,8 +437,8 @@ const debouncedSearch = debounce((query: string) => {
 
 // Will only call the search function once after 300ms of inactivity
 debouncedSearch('react');
-debouncedSearch('react hooks');
-debouncedSearch('react components');
+debouncedSearch('react hooks'); // Will cancel previous call
+debouncedSearch('react components'); // Will cancel previous call
 ```
 
 ### Type Definitions
@@ -408,6 +451,12 @@ Type representing primitive JavaScript types.
 import { PrimitiveType } from '@tokenring-ai/utility/types';
 
 const value: PrimitiveType = 'string'; // or number, boolean, null, undefined
+```
+
+**Type definition:**
+
+```typescript
+type PrimitiveType = string | number | boolean | null | undefined;
 ```
 
 ## Usage Examples
@@ -441,13 +490,32 @@ const id = pickValue(user, 'id');
 // 1
 ```
 
+### Parametric Object Filtering Example
+
+```typescript
+import parametricObjectFilter from '@tokenring-ai/utility/object/parametricObjectFilter';
+
+const filter = parametricObjectFilter({
+  age: '>20',
+  name: 'Alice'
+});
+
+const users = [
+  { name: 'Alice', age: 25 },
+  { name: 'Bob', age: 18 }
+];
+
+const filtered = users.filter(filter);
+// [{ name: 'Alice', age: 25 }]
+```
+
 ### String Formatting Examples
 
 ```typescript
-import { 
-  shellEscape, 
-  joinDefault, 
-  asciiTable, 
+import {
+  shellEscape,
+  joinDefault,
+  createAsciiTable,
   wrapText,
   formatLogMessages
 } from '@tokenring-ai/utility/string';
@@ -463,11 +531,14 @@ const joined = joinDefault(', ', items, 'none');
 // 'none'
 
 // ASCII table
-const table = asciiTable([
-  ['Name', 'Age'],
-  ['Alice', '30'],
-  ['Bob', '25']
-]);
+const table = createAsciiTable(
+  [
+    ['Name', 'Age'],
+    ['Alice', '30'],
+    ['Bob', '25']
+  ],
+  { columnWidths: [10, 5], grid: true }
+);
 
 // Text wrapping
 const lines = wrapText('This is a long line that needs to be wrapped at 30 characters', 30);
@@ -501,32 +572,43 @@ class UserService extends HttpService {
 ### Registry Pattern Example
 
 ```typescript
-import { 
-  KeyedRegistry, 
-  RegistrySingleSelector,
-  KeyedRegistryWithSingleSelection
-} from '@tokenring-ai/utility/registry';
+import KeyedRegistry from '@tokenring-ai/utility/registry/KeyedRegistry';
+import TypedRegistry from '@tokenring-ai/utility/registry/TypedRegistry';
 
-// Create a registry for database connections
-const dbRegistry = new KeyedRegistry<DatabaseConnection>();
+// Create a keyed registry for connections
+const dbRegistry = new KeyedRegistry<string>();
 
-// Register different database implementations
-dbRegistry.register('postgres', new PostgresConnection());
-dbRegistry.register('mysql', new MySqlConnection());
+// Register different database connections
+dbRegistry.register('postgres', 'postgresql://localhost:5432');
+dbRegistry.register('mysql', 'mysql://localhost:3306');
 
-// Use a selector to manage active database
-const dbSelector = new RegistrySingleSelector(dbRegistry);
-dbSelector.on('change', (activeDb) => {
-  console.log('Active database changed:', activeDb);
-});
+// Get all registered items
+const allItems = dbRegistry.getAllItemValues();
+// ['postgresql://localhost:5432', 'mysql://localhost:3306']
 
-dbSelector.setEnabledItem('postgres');
+// Pattern matching
+const matchingItems = dbRegistry.getItemNamesLike('my*');
+// ['mysql']
 
-// Alternative: combined registry with selection
-const combinedRegistry = new KeyedRegistryWithSingleSelection<DatabaseConnection>();
-combinedRegistry.register('postgres', new PostgresConnection());
-combinedRegistry.selectItem('postgres');
-const activeDb = combinedRegistry.getSelected();
+// Using TypedRegistry
+interface Database extends NamedClass {
+  connect(): void;
+}
+
+class PostgresDatabase implements Database {
+  static name = 'postgres';
+  connect() { /* ... */ }
+}
+
+class MySqlDatabase implements Database {
+  static name = 'mysql';
+  connect() { /* ... */ }
+}
+
+const typedRegistry = new TypedRegistry<Database>();
+typedRegistry.register(PostgresDatabase, MySqlDatabase);
+
+const db = typedRegistry.getItemByType(PostgresDatabase);
 ```
 
 ### Timer Utilities Example
@@ -554,14 +636,6 @@ debouncedSearch('react hooks'); // Will cancel previous call
 debouncedSearch('react components'); // Will cancel previous call
 ```
 
-## Dependencies
-
-- `@tokenring-ai/agent` ^0.2.0
-
 ## License
 
-MIT License - see the LICENSE file for details.
-
-## Contributing
-
-This package is part of the Token Ring monorepo. Please follow the contribution guidelines in the main repository when making changes to this package.
+MIT License - see [LICENSE](./LICENSE) file for details.
