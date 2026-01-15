@@ -1,6 +1,5 @@
 import {wrapText} from "./wrapText.ts";
 
-
 /* --- Example Usage ---
 const headers = ["ID", "Name", "Description"];
 const rows = [
