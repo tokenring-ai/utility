@@ -28,15 +28,34 @@ Or add to your `package.json`:
 
 The package is organized into logical modules:
 
-- **Object utilities** (`object/`) - Object manipulation functions
-- **String utilities** (`string/`) - String processing and formatting functions
-- **HTTP utilities** (`http/`) - HTTP client helpers with retry logic
-- **Promise utilities** (`promise/`) - Promise handling utilities
-- **Registry utilities** (`registry/`) - Registry and selector classes
+- **Buffer** (`buffer/`) - Binary data detection utilities
+- **Object utilities** (`object/`) - Object manipulation functions including `pick`, `omit`, `transform`, `isEmpty`, `deepMerge`, `parametricObjectFilter`, and `pickValue`
+- **String utilities** (`string/`) - String processing and formatting functions including `convertBoolean`, `trimMiddle`, `shellEscape`, `joinDefault`, `formatLogMessage`, `asciiTable`, `wrapText`, `markdownList`, `numberedList`, and `indent`
+- **HTTP utilities** (`http/`) - HTTP client helpers with retry logic including `HttpService` abstract class and `doFetchWithRetry`
+- **Promise utilities** (`promise/`) - Promise handling utilities including `abandon`, `waitForAbort`, and `backoff`
+- **Registry utilities** (`registry/`) - Registry and selector classes including `KeyedRegistry` and `TypedRegistry`
 - **Timer utilities** (`timer/`) - Throttle and debounce functions
 - **Type definitions** (`types.ts`) - Common type definitions
 
 ## API Documentation
+
+### Buffer Utilities
+
+#### `isBinaryData(buffer: Buffer): boolean`
+
+Detects if a buffer contains binary data by checking for null bytes and other non-text characters in the first 8KB of the file. Binary data is detected if:
+- The buffer contains null bytes (strong indicator)
+- More than 30% of bytes in the first 8KB are non-printable ASCII characters
+
+```typescript
+import isBinaryData from '@tokenring-ai/utility/buffer/isBinaryData';
+
+const buffer = Buffer.from('hello world');
+const isBinary = isBinaryData(buffer); // false
+
+const binaryBuffer = Buffer.concat([Buffer.from('image'), Buffer.from([0x00, 0x01])]);
+const isBinaryResult = isBinaryData(binaryBuffer); // true
+```
 
 ### Object Utilities
 
@@ -64,40 +83,31 @@ const publicInfo = omit(user, ['email']);
 // { id: 1, name: 'Alice' }
 ```
 
-#### `transform<T, R>(obj: T, transformer: (value: T[keyof T], key: keyof T) => R): { [K in keyof T]: R}`
+#### `transform<T, R>(obj: T, transformer: <K extends keyof T>(value: T[K], key: K) => R): { [K in keyof T]: R }`
 
-Transforms an object's values using a transformer function.
+Transforms an object's values using a transformer function. The transformer function should accept both the value and the key.
 
 ```typescript
 import transform from '@tokenring-ai/utility/object/transform';
 
 const config = { port: 3000, host: 'localhost' };
-const stringConfig = transform(config, (value) => String(value));
+const stringConfig = transform(config, (value, key) => String(value));
 // { port: '3000', host: 'localhost' }
 ```
 
-#### `requireFields<T>(obj: T, required: (keyof T)[], context?: string): void`
+#### `isEmpty(obj: Object | Array<any> | Map<any, any> | Set<any> | null | undefined): boolean`
 
-Validates that required fields exist in an object.
-
-```typescript
-import requireFields from '@tokenring-ai/utility/object/requireFields';
-
-const config = { port: 3000 };
-requireFields(config, ['port', 'host'], 'ServerConfig');
-// Throws: ServerConfig: Missing required field "host"
-```
-
-#### `pickValue<T, K extends keyof T>(obj: T, key: K): T[K] | undefined`
-
-Safely picks a single value from an object.
+Checks if the provided object is empty. An object is considered empty if it is null, undefined, an empty array, an empty Map/Set, or an object with no own properties.
 
 ```typescript
-import pickValue from '@tokenring-ai/utility/object/pickValue';
+import isEmpty from '@tokenring-ai/utility/object/isEmpty';
 
-const user = { id: 1, name: 'Alice' };
-const id = pickValue(user, 'id');
-// 1
+isEmpty(null);         // true
+isEmpty(undefined);    // true
+isEmpty([]);           // true
+isEmpty([1, 2]);       // false
+isEmpty({});           // true
+isEmpty({ a: 1 });     // false
 ```
 
 #### `deepMerge<T extends object, S extends object>(target: T | null | undefined, source: S | null | undefined): T & S`
@@ -115,7 +125,7 @@ const merged = deepMerge(configA, configB);
 
 #### `parametricObjectFilter(requirements: ParametricObjectRequirements): (obj: Record<string, unknown>) => boolean`
 
-Creates a filter function based on parameter requirements. Supports numeric comparisons (>, <, >=, <=, =) and string equality.
+Creates a filter function based on parameter requirements. Supports numeric comparisons (>, <, >=, <=, =) and string equality. The 'name' field is treated specially - it will only match if the value exactly equals the given value and the comparison is not a string comparison operator.
 
 ```typescript
 import parametricObjectFilter from '@tokenring-ai/utility/object/parametricObjectFilter';
@@ -127,18 +137,44 @@ const filter = parametricObjectFilter({
 
 const users = [
   { name: 'Alice', age: 25 },
-  { name: 'Bob', age: 18 }
+  { name: 'Bob', age: 18 },
+  { name: 'Charlie', age: 30 }
 ];
 
 const filtered = users.filter(filter);
-// [{ name: 'Alice', age: 25 }]
+// [{ name: 'Alice', age: 25 }, { name: 'Charlie', age: 30 }]
+```
+
+**ParametricObjectRequirements Type:**
+
+```typescript
+type ParametricObjectRequirements = Record<string, number | string | null | undefined>;
+```
+
+**Supported Operators:**
+- Numeric: `>`, `<`, `>=`, `<=`, `=`, `` (no operator)
+- String: `` (no operator) only for 'name' field
+
+#### `pickValue<T extends object>(obj: T, key: unknown): T[keyof T] | undefined`
+
+Safely picks a single value from an object by key. Returns undefined if the key is not found or is not a string.
+
+```typescript
+import pickValue from '@tokenring-ai/utility/object/pickValue';
+
+const user = { id: 1, name: 'Alice' };
+const id = pickValue(user, 'id');
+// 1
+
+const invalidKey = pickValue(user, 'invalid');
+// undefined
 ```
 
 ### String Utilities
 
-#### `convertBoolean(text: string | null | undefined): boolean`
+#### `convertBoolean(text: string | undefined | null): boolean`
 
-Converts string representations to boolean values.
+Converts string representations to boolean values. Throws an Error if the text is any other value.
 
 ```typescript
 import convertBoolean from '@tokenring-ai/utility/string/convertBoolean';
@@ -149,17 +185,21 @@ convertBoolean('1');      // true
 convertBoolean('false');  // false
 convertBoolean('no');     // false
 convertBoolean('0');      // false
+convertBoolean('maybe');  // Error: Unknown string used as boolean value: maybe
 ```
 
 #### `trimMiddle(str: string, startLength: number, endLength: number): string`
 
-Truncates the middle of a string, keeping the beginning and end.
+Truncates the middle of a string, keeping the beginning and end. Supports up to 13 characters of omitted text (`...omitted...`). If the string is too short, returns the original string.
 
 ```typescript
 import trimMiddle from '@tokenring-ai/utility/string/trimMiddle';
 
 trimMiddle('abcdefghijklmnopqrstuvwxyz', 5, 5);
 // 'abcde...vwxyz'
+
+trimMiddle('hello', 2, 2);
+// 'hello' (too short, returns original)
 ```
 
 #### `shellEscape(arg: string): string`
@@ -171,24 +211,30 @@ import { shellEscape } from '@tokenring-ai/utility/string/shellEscape';
 
 const filename = "my file's name.txt";
 const command = `cat ${shellEscape(filename)}`;
-// "cat 'my file'\\\\''s name.txt'"
+// "cat 'my file's\\'s name.txt'"
 ```
 
-#### `joinDefault<T>(separator: string, iterable: Iterable<string> | null | undefined, defaultValue?: T): string | T`
+**Behavior:**
+- Returns empty string as `'''` if arg is falsy
+- Returns arg as-is if it matches `^[a-zA-Z0-9_\-./:]+$` (no special characters)
+- Otherwise wraps in single quotes and escapes any single quotes within
 
-Joins strings with a separator, providing a default value if the iterable is empty.
+#### `joinDefault(separator: string, iterable: Iterable<string> | null | undefined, defaultValue?: OtherReturnType): string | OtherReturnType`
+
+Joins strings with a separator, providing a default value if the iterable is empty. Preserves the type of the default value.
 
 ```typescript
 import joinDefault from '@tokenring-ai/utility/string/joinDefault';
 
 joinDefault(', ', ['a', 'b', 'c']);       // 'a, b, c'
-joinDefault(', ', null, 'default');       // 'default'
+joinDefault(', ', null, 'none');           // 'none'
 joinDefault(', ', ['single']);            // 'single'
+joinDefault(', ', null, 0);               // 0 (preserves type)
 ```
 
 #### `formatLogMessages(msgs: (string | Error)[]): string`
 
-Formats log messages similar to console.log with special handling for errors.
+Formats log messages similar to console.log with special handling for errors. Error objects include their stack trace if available.
 
 ```typescript
 import formatLogMessages from '@tokenring-ai/utility/string/formatLogMessage';
@@ -198,11 +244,23 @@ const output = formatLogMessages([
   { id: 1, name: 'Alice' },
   new Error('Connection failed')
 ]);
+// 'User loaded [object Object] Error: Connection failed\n    at...'
 ```
 
 #### `createAsciiTable(data: string[][], options: TableOptions): string`
 
-Generates an ASCII table with wrapping and spacing.
+Generates an ASCII table with wrapping and spacing. Supports automatic text wrapping for long content and optional table borders.
+
+**TableOptions interface:**
+
+```typescript
+interface TableOptions {
+  columnWidths: number[];
+  padding?: number;
+  header?: string[];
+  grid?: boolean;
+}
+```
 
 ```typescript
 import { createAsciiTable } from '@tokenring-ai/utility/string/asciiTable';
@@ -221,42 +279,64 @@ const table = createAsciiTable(
 );
 ```
 
-**TableOptions interface:**
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `columnWidths` | `number[]` | Array specifying the width of each column |
-| `padding?` | `number` | Optional padding between cell content and borders (default: 0) |
-| `grid?` | `boolean` | Optional flag to enable table borders (default: false) |
-
 #### `wrapText(text: string, maxWidth: number): string[]`
 
-Wraps text into an array of strings based on max width.
+Wraps text into an array of strings based on max width, preserving paragraphs.
 
 ```typescript
 import wrapText from '@tokenring-ai/utility/string/wrapText';
 
 const lines = wrapText('This is a long line of text that needs to be wrapped', 20);
+// ['This is a long', 'line of text that', 'needs to be', 'wrapped']
+```
+
+#### `indent(input: string | string[], level: number): string`
+
+Indents lines of text by a specified level. Handles both string and array of strings input.
+
+```typescript
+import indent from '@tokenring-ai/utility/string/indent';
+
+indent('line1\nline2', 2);
+// '  line1\n  line2'
+
+indent(['line1', 'line2', 'line3'], 3);
+// '     line1\n     line2\n     line3'
+```
+
+#### `markdownList(items: string[], indentLevel: number = 1): string`
+
+Creates a markdown list with the specified items and indentation level.
+
+```typescript
+import markdownList from '@tokenring-ai/utility/string/markdownList';
+
+markdownList(['Item 1', 'Item 2', 'Item 3']);
+// '- Item 1\n- Item 2\n- Item 3'
+
+markdownList(['Item 1', 'Item 2'], 3);
+// '- Item 1\n- Item 2'
+```
+
+#### `numberedList(items: string[], indentLevel: number = 1): string`
+
+Creates a numbered list with the specified items and indentation level.
+
+```typescript
+import numberedList from '@tokenring-ai/utility/string/numberedList';
+
+numberedList(['Item 1', 'Item 2', 'Item 3']);
+// '1. Item 1\n2. Item 2\n3. Item 3'
+
+numberedList(['Item 1', 'Item 2'], 3);
+// '1. Item 1\n2. Item 2'
 ```
 
 ### HTTP Utilities
 
 #### `HttpService` (abstract base class)
 
-Base class for HTTP services with automatic JSON parsing and error handling.
-
-```typescript
-import { HttpService } from '@tokenring-ai/utility/http/HttpService';
-
-export class MyApiService extends HttpService {
-  protected baseUrl = 'https://api.example.com';
-  protected defaultHeaders = { 'Content-Type': 'application/json' };
-
-  async getUser(id: string) {
-    return this.fetchJson(`/users/${id}`, {}, 'getUser');
-  }
-}
-```
+Base class for HTTP services with automatic JSON parsing and error handling. Extend this class to create typed HTTP clients.
 
 **Methods:**
 
@@ -265,9 +345,35 @@ export class MyApiService extends HttpService {
 | `fetchJson` | `fetchJson(path: string, opts: RequestInit, context: string): Promise<any>` | Performs a JSON fetch with automatic retry logic |
 | `parseJsonOrThrow` | `parseJsonOrThrow(res: Response, context: string): Promise<any>` | Parses JSON response or throws an error |
 
+**Abstract Properties:**
+- `baseUrl`: string - The base URL for all requests
+- `defaultHeaders`: Record<string, string> - Default headers for all requests
+
+```typescript
+import { HttpService } from '@tokenring-ai/utility/http/HttpService';
+
+export class UserService extends HttpService {
+  protected baseUrl = 'https://api.example.com';
+  protected defaultHeaders = {
+    'Content-Type': 'application/json'
+  };
+
+  async getUser(id: string) {
+    return this.fetchJson(`/users/${id}`, {}, 'getUser');
+  }
+
+  async createUser(userData: any) {
+    return this.fetchJson('/users', {
+      method: 'POST',
+      body: JSON.stringify(userData)
+    }, 'createUser');
+  }
+}
+```
+
 #### `doFetchWithRetry(url: string, init?: RequestInit): Promise<Response>`
 
-Fetch with automatic retry logic for network errors and rate limiting.
+Fetch with automatic retry logic for network errors and rate limiting. Retries up to 3 times with exponential backoff for 429 (rate limit) and 5xx server errors.
 
 ```typescript
 import { doFetchWithRetry } from '@tokenring-ai/utility/http/doFetchWithRetry';
@@ -277,22 +383,29 @@ const response = await doFetchWithRetry('https://api.example.com/data', {
 });
 ```
 
+**Retry logic:**
+- Max retries: 3
+- Initial delay: 500ms
+- Backoff multiplier: 2
+- Retries on: 429 (rate limit), 500-599 (server errors)
+- Immediate return on: 200-299, 300-399, 400-499 (other errors)
+
 ### Promise Utilities
 
 #### `abandon<T>(promise: Promise<T>): void`
 
-Intentionally abandons a promise to prevent unhandled rejection warnings.
+Intentionally abandons a promise by consuming its result and any errors without doing anything with them. This is useful to prevent unhandled promise rejection warnings when you don't care about the promise's outcome.
 
 ```typescript
 import { abandon } from '@tokenring-ai/utility/promise/abandon';
 
 const fetchPromise = fetch('https://api.example.com/data');
-abandon(fetchPromise); // Consume resolution/rejection quietly
+abandon(fetchPromise); // Consumes the promise silently
 ```
 
 #### `waitForAbort<T>(signal: AbortSignal, callback: (ev: Event) => Promise<T>): Promise<T>`
 
-Waits for an AbortSignal to be triggered and resolves a promise with the callback result.
+Waits for an AbortSignal to be triggered and resolves a promise with the result of the provided callback function.
 
 ```typescript
 import { waitForAbort } from '@tokenring-ai/utility/promise/waitForAbort';
@@ -301,12 +414,25 @@ const controller = new AbortController();
 const signal = controller.signal;
 
 // Wait for abort signal with callback
-await waitForAbort(signal, (ev) => Promise.resolve('aborted'));
+const result = await waitForAbort(signal, (ev) => {
+  console.log('Aborted:', ev);
+  return Promise.resolve('aborted');
+});
 ```
 
 #### `backoff<T>(options: BackoffOptions, fn: ({ attempt }: { attempt: number }) => Promise<T | null | undefined>): Promise<T>`
 
-Retries an async function with exponential backoff.
+Retries an async function with exponential backoff. Returns the first non-null/undefined result, or throws an error if all attempts fail.
+
+**BackoffOptions interface:**
+
+```typescript
+interface BackoffOptions {
+  times: number;         // Number of retry attempts
+  interval: number;      // Initial delay in milliseconds
+  multiplier: number;    // Multiplier for exponential backoff
+}
+```
 
 ```typescript
 import { backoff } from '@tokenring-ai/utility/promise/backoff';
@@ -324,18 +450,7 @@ await backoff(
 
 #### `KeyedRegistry<T>`
 
-A generic registry for storing and retrieving items by string keys.
-
-```typescript
-import KeyedRegistry from '@tokenring-ai/utility/registry/KeyedRegistry';
-
-const registry = new KeyedRegistry<string>();
-registry.register('db', 'postgresql://localhost:5432');
-registry.register('cache', 'redis://localhost:6379');
-
-const dbUrl = registry.getItemByName('db');
-// 'postgresql://localhost:5432'
-```
+A generic registry for storing and retrieving items by string keys. Includes support for asynchronous item retrieval with callbacks.
 
 **Methods:**
 
@@ -343,14 +458,14 @@ const dbUrl = registry.getItemByName('db');
 |--------|-----------|-------------|
 | `register` | `register(name: string, resource: T): void` | Registers an item by name |
 | `unregister` | `unregister(name: string): void` | Unregisters an item by name |
-| `waitForItemByName` | `waitForItemByName(name: string, callback: (item: T) => void): void` | Waits for an item to be registered |
-| `getItemByName` | `getItemByName(name: string): T \| undefined` | Gets an item by name |
+| `waitForItemByName` | `waitForItemByName(name: string, callback: (item: T) => void): void` | Waits for an item to be registered (or returns immediately if already exists) |
+| `getItemByName` | `getItemByName(name: string): T | undefined` | Gets an item by name |
 | `requireItemByName` | `requireItemByName(name: string): T` | Gets an item by name or throws |
-| `ensureItems` | `ensureItems(names: string[]): void` | Ensures all items exist |
+| `ensureItems` | `ensureItems(names: string[]): void` | Ensures all specified items exist (throws if any missing) |
 | `getAllItemNames` | `getAllItemNames(): string[]` | Gets all registered item names |
 | `getAllItems` | `getAllItems(): Record<string, T>` | Gets all items as a record |
 | `getAllItemValues` | `getAllItemValues(): T[]` | Gets all items as an array |
-| `getItemNamesLike` | `getItemNamesLike(likeName: string): string[]` | Finds items matching a pattern |
+| `getItemNamesLike` | `getItemNamesLike(likeName: string): string[]` | Finds items matching a prefix or exact name |
 | `ensureItemNamesLike` | `ensureItemNamesLike(likeName: string): string[]` | Finds items matching a pattern or throws |
 | `getItemEntriesLike` | `getItemEntriesLike(likeName: string): [string, T][]` | Gets entries matching a pattern |
 | `forEach` | `forEach(callback: (key: string, item: T) => void): void` | Iterates over all items |
@@ -358,33 +473,41 @@ const dbUrl = registry.getItemByName('db');
 | `registerAll` | `registerAll(items: Record<string, T>): void` | Registers multiple items |
 
 **Pattern matching with `getItemNamesLike`:**
+The `likeName` parameter supports:
+- Prefix matching: `'db*'` matches `'database'`, `'dbconnection'`, etc.
+- Exact matching: `'db'` matches `'db'` exactly
+- Case-insensitive matching
 
-The `likeName` parameter supports wildcard patterns:
-- Prefix matching: `'db*'` matches 'database', 'dbconnection', etc.
-- Exact matching: `'db'` matches 'db' exactly
+```typescript
+import KeyedRegistry from '@tokenring-ai/utility/registry/KeyedRegistry';
+
+// Create a keyed registry for connections
+const dbRegistry = new KeyedRegistry<string>();
+
+// Register different database connections
+dbRegistry.register('postgres', 'postgresql://localhost:5432');
+dbRegistry.register('mysql', 'mysql://localhost:3306');
+
+// Get all registered items
+const allItems = dbRegistry.getAllItemValues();
+// ['postgresql://localhost:5432', 'mysql://localhost:3306']
+
+// Pattern matching
+const matchingItems = dbRegistry.getItemNamesLike('my*');
+// ['mysql']
+
+// With callback (waits for registration if needed)
+dbRegistry.waitForItemByName('postgres', (item) => {
+  console.log('Postgres registered:', item);
+});
+
+// Ensure items exist
+dbRegistry.ensureItems(['postgres', 'mysql']);
+```
 
 #### `TypedRegistry<MinimumType extends NamedClass>`
 
-Registry for classes with a `name` property.
-
-```typescript
-import TypedRegistry, { NamedClass } from '@tokenring-ai/utility/registry/TypedRegistry';
-
-class Database implements NamedClass {
-  static name = 'database';
-  connect() { /* ... */ }
-}
-
-class Cache implements NamedClass {
-  static name = 'cache';
-  connect() { /* ... */ }
-}
-
-const registry = new TypedRegistry<Database>();
-registry.register(Database, Cache);
-
-const db = registry.getItemByType(Database);
-```
+Registry for classes with a `name` static property. Automatically registers and retrieves classes by type.
 
 **Interface:**
 
@@ -398,20 +521,44 @@ interface NamedClass {
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `register` | `register(...items: MinimumType[]): void` | Registers items |
-| `unregister` | `unregister(...items: MinimumType[]): void` | Unregisters items |
+| `register` | `register(...items: MinimumType[] | MinimumType[][]): void` | Registers items by their `name` property |
+| `unregister` | `unregister(...items: MinimumType[]): void` | Unregisters items by their `name` property |
 | `getItems` | `getItems: MinimumType[]` | Gets all registered items |
-| `waitForItemByType` | `waitForItemByType\<R\>(type: new () => R, callback: (item: R) => void): void` | Waits for item by type |
-| `getItemByType` | `getItemByType\<R\>(type: new () => R): R \| undefined` | Gets item by type |
-| `requireItemByType` | `requireItemByType\<R\>(type: new () => R): R` | Gets item by type or throws |
-| `getItemByName` | `getItemByName(name: string): MinimumType \| undefined` | Gets item by name |
+| `waitForItemByType` | `waitForItemByType<R extends MinimumType>(type: abstract new (...args: any[]) => R, callback: (item: R) => void): void` | Waits for item by type |
+| `getItemByType` | `getItemByType<R extends MinimumType>(type: abstract new (...args: any[]) => R): R | undefined` | Gets item by type |
+| `requireItemByType` | `requireItemByType<R extends MinimumType>(type: abstract new (...args: any[]) => R): R` | Gets item by type or throws |
+| `getItemByName` | `getItemByName(name: string): MinimumType | undefined` | Gets item by name |
 | `requireItemByName` | `requireItemByName(name: string): MinimumType` | Gets item by name or throws |
+
+```typescript
+import TypedRegistry, { NamedClass } from '@tokenring-ai/utility/registry/TypedRegistry';
+
+interface Database extends NamedClass {
+  connect(): void;
+}
+
+class PostgresDatabase implements Database {
+  static name = 'postgres';
+  connect() { /* ... */ }
+}
+
+class MySqlDatabase implements Database {
+  static name = 'mysql';
+  connect() { /* ... */ }
+}
+
+const typedRegistry = new TypedRegistry<Database>();
+typedRegistry.register(PostgresDatabase, MySqlDatabase);
+
+const db = typedRegistry.getItemByType(PostgresDatabase);
+db.connect();
+```
 
 ### Timer Utilities
 
 #### `throttle<T extends (...args: any[]) => any>(func: T): (minWait: number, ...args: Parameters<T>) => void`
 
-Creates a throttled function that only invokes the provided function if at least `minWait` milliseconds have elapsed since the last invocation.
+Creates a throttled function that only invokes the provided function if at least `minWait` milliseconds have elapsed since the last invocation. If multiple calls are made within the throttle period, only the last call will be executed at the end of the period.
 
 ```typescript
 import throttle from '@tokenring-ai/utility/timer/throttle';
@@ -422,24 +569,41 @@ const throttledLog = throttle((message: string) => console.log(message));
 throttledLog(1000, 'Log 1');
 throttledLog(1000, 'Log 2'); // Will be ignored
 throttledLog(1000, 'Log 3'); // Will be ignored
+// Output: 'Log 1'
+
+// With zero minWait, executes immediately
+throttledLog(0, 'Immediate'); // Executes immediately
 ```
+
+**Technical details:**
+- Uses a timestamp-based throttling mechanism
+- Clears any pending timeout if a new call comes in within the period
+- Executes immediately if enough time has passed since the last call
+- Uses `Date.now()` for precise time tracking
 
 #### `debounce<T extends (...args: any[]) => any>(func: T, delay: number): (...args: Parameters<T>) => void`
 
-Creates a debounced function that delays invoking the provided function until after `delay` milliseconds have elapsed since the last time the debounced function was invoked.
+Creates a debounced function that delays invoking the provided function until after `delay` milliseconds have elapsed since the last time the debounced function was invoked. If multiple calls are made within the debounce period, the function will only execute once at the end of the period.
 
 ```typescript
 import debounce from '@tokenring-ai/utility/timer/debounce';
 
 const debouncedSearch = debounce((query: string) => {
   console.log('Searching for:', query);
+  // Call search API
 }, 300);
 
 // Will only call the search function once after 300ms of inactivity
 debouncedSearch('react');
-debouncedSearch('react hooks'); // Will cancel previous call
-debouncedSearch('react components'); // Will cancel previous call
+debouncedSearch('react hooks'); // Cancels previous call
+debouncedSearch('react components'); // Cancels previous call
+// Output after 300ms: 'Searching for: react components'
 ```
+
+**Technical details:**
+- Clears any pending timeout if a new function call comes in
+- Uses a single timeout that is reset on each call
+- Prevents multiple executions within the delay period
 
 ### Type Definitions
 
@@ -464,7 +628,7 @@ type PrimitiveType = string | number | boolean | null | undefined;
 ### Basic Object Manipulation
 
 ```typescript
-import { pick, omit, transform, pickValue } from '@tokenring-ai/utility/object';
+import { pick, omit, transform, pickValue, deepMerge, isEmpty, parametricObjectFilter } from '@tokenring-ai/utility/object';
 
 const user = {
   id: 1,
@@ -482,19 +646,25 @@ const safeUser = omit(user, ['password']);
 // { id: 1, name: 'Alice', email: 'alice@example.com' }
 
 // Transform values
-const stringifiedUser = transform(user, (value) => String(value));
+const stringifiedUser = transform(user, (value, key) => String(value));
 // { id: '1', name: 'Alice', email: 'alice@example.com', password: 'secret' }
 
 // Get single value safely
 const id = pickValue(user, 'id');
 // 1
-```
 
-### Parametric Object Filtering Example
+// Check if object is empty
+isEmpty(user);     // false
+isEmpty({});       // true
+isEmpty([]);       // true
 
-```typescript
-import parametricObjectFilter from '@tokenring-ai/utility/object/parametricObjectFilter';
+// Deep merge
+const configA = { port: 3000, host: 'localhost' };
+const configB = { host: '127.0.0.1', cache: true };
+const merged = deepMerge(configA, configB);
+// { port: 3000, host: '127.0.0.1', cache: true }
 
+// Parametric filtering
 const filter = parametricObjectFilter({
   age: '>20',
   name: 'Alice'
@@ -502,28 +672,44 @@ const filter = parametricObjectFilter({
 
 const users = [
   { name: 'Alice', age: 25 },
-  { name: 'Bob', age: 18 }
+  { name: 'Bob', age: 18 },
+  { name: 'Charlie', age: 30 }
 ];
 
 const filtered = users.filter(filter);
-// [{ name: 'Alice', age: 25 }]
+// [{ name: 'Alice', age: 25 }, { name: 'Charlie', age: 30 }]
 ```
 
 ### String Formatting Examples
 
 ```typescript
 import {
+  convertBoolean,
+  trimMiddle,
   shellEscape,
   joinDefault,
   createAsciiTable,
   wrapText,
-  formatLogMessages
+  formatLogMessages,
+  markdownList,
+  numberedList,
+  indent
 } from '@tokenring-ai/utility/string';
 
-// Shell escape example
+// Boolean conversion
+convertBoolean('true');   // true
+convertBoolean('yes');    // true
+convertBoolean('false');  // false
+convertBoolean('no');     // false
+
+// String shrinking
+trimMiddle('FullDocumentWithLotsOfText', 10, 10);
+// 'FilenameExa...ample.txt'
+
+// Shell escaping
 const filename = "my file's name.txt";
 const command = `rm ${shellEscape(filename)}`;
-// "rm 'my file'\\\\''s name.txt'"
+// "rm 'my file's\\'s name.txt'"
 
 // Join with default
 const items = null;
@@ -533,15 +719,26 @@ const joined = joinDefault(', ', items, 'none');
 // ASCII table
 const table = createAsciiTable(
   [
-    ['Name', 'Age'],
-    ['Alice', '30'],
-    ['Bob', '25']
+    ['Name', 'Age', 'Email'],
+    ['Alice', '30', 'alice@example.com'],
+    ['Bob', '25', 'bob@example.com']
   ],
-  { columnWidths: [10, 5], grid: true }
+  { columnWidths: [10, 5, 20], padding: 1, grid: true }
 );
 
 // Text wrapping
 const lines = wrapText('This is a long line that needs to be wrapped at 30 characters', 30);
+
+// Log formatting
+const output = formatLogMessages([
+  'User loaded',
+  { id: 1, name: 'Alice' },
+  new Error('Connection failed')
+]);
+
+// Markdown lists
+const list = markdownList(['Item 1', 'Item 2', 'Item 3'], 2);
+const numbered = numberedList(['Step 1', 'Step 2']);
 ```
 
 ### HTTP Service Example
@@ -567,6 +764,8 @@ class UserService extends HttpService {
     }, 'createUser');
   }
 }
+
+const userService = new UserService();
 ```
 
 ### Registry Pattern Example
@@ -574,6 +773,7 @@ class UserService extends HttpService {
 ```typescript
 import KeyedRegistry from '@tokenring-ai/utility/registry/KeyedRegistry';
 import TypedRegistry from '@tokenring-ai/utility/registry/TypedRegistry';
+import { NamedClass } from '@tokenring-ai/utility/registry/TypedRegistry';
 
 // Create a keyed registry for connections
 const dbRegistry = new KeyedRegistry<string>();
@@ -581,14 +781,20 @@ const dbRegistry = new KeyedRegistry<string>();
 // Register different database connections
 dbRegistry.register('postgres', 'postgresql://localhost:5432');
 dbRegistry.register('mysql', 'mysql://localhost:3306');
+dbRegistry.register('cache', 'redis://localhost:6379');
 
 // Get all registered items
 const allItems = dbRegistry.getAllItemValues();
-// ['postgresql://localhost:5432', 'mysql://localhost:3306']
+// ['postgresql://localhost:5432', 'mysql://localhost:3306', 'redis://localhost:6379']
 
 // Pattern matching
 const matchingItems = dbRegistry.getItemNamesLike('my*');
-// ['mysql']
+// ['mysql', 'cache']
+
+// With callback (waits for registration if needed)
+dbRegistry.waitForItemByName('postgres', (item) => {
+  console.log('Postgres registered:', item);
+});
 
 // Using TypedRegistry
 interface Database extends NamedClass {
@@ -609,6 +815,7 @@ const typedRegistry = new TypedRegistry<Database>();
 typedRegistry.register(PostgresDatabase, MySqlDatabase);
 
 const db = typedRegistry.getItemByType(PostgresDatabase);
+db.connect();
 ```
 
 ### Timer Utilities Example
@@ -619,6 +826,7 @@ import { throttle, debounce } from '@tokenring-ai/utility/timer';
 // Throttle example - limit function calls to once per second
 const throttledApiCall = throttle(async (param: string) => {
   console.log('API call with:', param);
+  // Make API call
 });
 
 throttledApiCall(1000, 'param1');
@@ -634,6 +842,90 @@ const debouncedSearch = debounce(async (query: string) => {
 debouncedSearch('react');
 debouncedSearch('react hooks'); // Will cancel previous call
 debouncedSearch('react components'); // Will cancel previous call
+// Output after 300ms: 'Performing search for: react components'
+```
+
+### Promise Utilities Example
+
+```typescript
+import { abandon, waitForAbort, backoff } from '@tokenring-ai/utility/promise';
+
+// Abandon promise to prevent unhandled rejection warning
+const fetchPromise = fetch('https://api.example.com/data');
+abandon(fetchPromise);
+
+// Wait for abort signal
+const controller = new AbortController();
+const signal = controller.signal;
+
+const result = await waitForAbort(signal, (ev) => {
+  console.log('Aborted:', ev);
+  return Promise.resolve('aborted');
+});
+
+// Exponential backoff with retry
+await backoff(
+  { times: 3, interval: 1000, multiplier: 2 },
+  async ({ attempt }) => {
+    // Try to connect to service
+    const result = await connectToService();
+    if (result) return result;
+    throw new Error('Connection failed');
+  }
+);
+```
+
+### Buffer Detection Example
+
+```typescript
+import isBinaryData from '@tokenring-ai/utility/buffer/isBinaryData';
+
+// Check if a file is binary
+const buffer = fs.readFileSync('image.png');
+const isBinary = isBinaryData(buffer);
+console.log('Is binary:', isBinary);
+
+const textBuffer = Buffer.from('hello world', 'utf-8');
+const isText = isBinaryData(textBuffer);
+console.log('Is text:', isText);
+```
+
+## Testing
+
+This package uses vitest for unit testing. The testing setup is configured in `vitest.config.ts`.
+
+Run tests:
+
+```bash
+bun test
+```
+
+Run tests in watch mode:
+
+```bash
+bun test:watch
+```
+
+Run tests with coverage:
+
+```bash
+bun test:coverage
+```
+
+## Development
+
+### Build
+
+```bash
+bun build
+```
+
+This runs TypeScript type checking without emitting files.
+
+### Dependencies
+
+```bash
+bun install
 ```
 
 ## License
