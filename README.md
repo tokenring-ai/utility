@@ -29,8 +29,8 @@ Or add to your `package.json`:
 The package is organized into logical modules:
 
 - **Buffer** (`buffer/`) - Binary data detection utilities
-- **Object utilities** (`object/`) - Object manipulation functions including `pick`, `omit`, `transform`, `isEmpty`, `deepMerge`, `parametricObjectFilter`, and `pickValue`
-- **String utilities** (`string/`) - String processing and formatting functions including `convertBoolean`, `trimMiddle`, `shellEscape`, `joinDefault`, `formatLogMessage`, `asciiTable`, `wrapText`, `markdownList`, `numberedList`, and `indent`
+- **Object utilities** (`object/`) - Object manipulation functions including `pick`, `omit`, `transform`, `isEmpty`, `deepMerge`, `parametricObjectFilter`, `pickValue`, and `requireFields`
+- **String utilities** (`string/`) - String processing and formatting functions including `convertBoolean`, `trimMiddle`, `shellEscape`, `joinDefault`, `formatLogMessages`, `wrapText`, `markdownList`, `numberedList`, `indent`, and `createAsciiTable`
 - **HTTP utilities** (`http/`) - HTTP client helpers with retry logic including `HttpService` abstract class and `doFetchWithRetry`
 - **Promise utilities** (`promise/`) - Promise handling utilities including `abandon`, `waitForAbort`, and `backoff`
 - **Registry utilities** (`registry/`) - Registry and selector classes including `KeyedRegistry` and `TypedRegistry`
@@ -170,6 +170,29 @@ const invalidKey = pickValue(user, 'invalid');
 // undefined
 ```
 
+#### `requireFields<T extends Object>(obj: T, required: (keyof T)[], context: string = "Config"): void`
+
+Validates that an object contains all required fields. Throws an error if any required field is missing or empty.
+
+```typescript
+import requireFields from '@tokenring-ai/utility/object/requireFields';
+
+const config = {
+  port: 3000,
+  host: 'localhost',
+  username: '',
+  password: undefined
+};
+
+requireFields(config, ['port', 'host', 'username', 'password'], 'Config');
+// Throws: Config: Missing required field "username"
+```
+
+**Parameters:**
+- `obj`: The object to validate
+- `required`: Array of required field names
+- `context`: Optional context string for error messages
+
 ### String Utilities
 
 #### `convertBoolean(text: string | undefined | null): boolean`
@@ -211,12 +234,12 @@ import { shellEscape } from '@tokenring-ai/utility/string/shellEscape';
 
 const filename = "my file's name.txt";
 const command = `cat ${shellEscape(filename)}`;
-// "cat 'my file's\\'s name.txt'"
+// "cat 'my file's\\\\\\\\'s name.txt'"
 ```
 
 **Behavior:**
 - Returns empty string as `'''` if arg is falsy
-- Returns arg as-is if it matches `^[a-zA-Z0-9_\-./:]+$` (no special characters)
+- Returns arg as-is if it matches `^[a-zA-Z0-9_\\\\-./:]+$` (no special characters)
 - Otherwise wraps in single quotes and escapes any single quotes within
 
 #### `joinDefault(separator: string, iterable: Iterable<string> | null | undefined, defaultValue?: OtherReturnType): string | OtherReturnType`
@@ -628,7 +651,7 @@ type PrimitiveType = string | number | boolean | null | undefined;
 ### Basic Object Manipulation
 
 ```typescript
-import { pick, omit, transform, pickValue, deepMerge, isEmpty, parametricObjectFilter } from '@tokenring-ai/utility/object';
+import { pick, omit, transform, pickValue, deepMerge, isEmpty, parametricObjectFilter, requireFields } from '@tokenring-ai/utility/object';
 
 const user = {
   id: 1,
@@ -678,6 +701,14 @@ const users = [
 
 const filtered = users.filter(filter);
 // [{ name: 'Alice', age: 25 }, { name: 'Charlie', age: 30 }]
+
+// Require fields
+try {
+  requireFields(user, ['id', 'name', 'email']);
+  console.log('All required fields present');
+} catch (error) {
+  console.error(error.message);
+}
 ```
 
 ### String Formatting Examples
@@ -709,7 +740,7 @@ trimMiddle('FullDocumentWithLotsOfText', 10, 10);
 // Shell escaping
 const filename = "my file's name.txt";
 const command = `rm ${shellEscape(filename)}`;
-// "rm 'my file's\\'s name.txt'"
+// "rm 'my file's\\\\\\\\'s name.txt'"
 
 // Join with default
 const items = null;
@@ -727,7 +758,7 @@ const table = createAsciiTable(
 );
 
 // Text wrapping
-const lines = wrapText('This is a long line that needs to be wrapped at 30 characters', 30);
+const lines = wrapText('This is a long line of text that needs to be wrapped', 30);
 
 // Log formatting
 const output = formatLogMessages([
@@ -739,6 +770,9 @@ const output = formatLogMessages([
 // Markdown lists
 const list = markdownList(['Item 1', 'Item 2', 'Item 3'], 2);
 const numbered = numberedList(['Step 1', 'Step 2']);
+
+// Indent text
+const indented = indent('line1\nline2', 2);
 ```
 
 ### HTTP Service Example
