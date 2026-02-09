@@ -3,7 +3,7 @@
 import KeyedRegistry from "./KeyedRegistry.js";
 
 export interface NamedClass {
-  name: string;
+  readonly name: string;
 }
 
 export default class TypedRegistry<MinimumType extends NamedClass> {
