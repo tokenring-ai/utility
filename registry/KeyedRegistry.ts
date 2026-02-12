@@ -1,9 +1,9 @@
 export default class KeyedRegistry<T = any> {
-  protected items: Record<string, T> = {};
+  protected items: Map<string, T> = new Map();
   private subscribers: Map<string, ((item: T) => void)[]> = new Map();
 
   register = (name: string, resource: T) => {
-    this.items[name] = resource;
+    this.items.set(name, resource);
 
     // Notify any waiting subscribers
     const itemSubscribers = this.subscribers.get(name);
@@ -14,13 +14,14 @@ export default class KeyedRegistry<T = any> {
   };
 
   unregister = (name: string) => {
-    delete this.items[name];
+    this.items.delete(name);
   };
 
   waitForItemByName = (name: string, callback: (item: T) => void) : void => {
     // If item already exists, return it immediately
-    if (this.items[name]) {
-      callback(this.items[name]);
+    const item = this.items.get(name);
+    if (item) {
+      callback(item);
     }
 
     // Otherwise, subscribe and wait for registration
@@ -30,7 +31,7 @@ export default class KeyedRegistry<T = any> {
   };
 
   getItemByName = (name: string): T | undefined => {
-    return this.items[name];
+    return this.items.get(name);
   };
 
   requireItemByName = (name: string): T => {
@@ -43,32 +44,30 @@ export default class KeyedRegistry<T = any> {
 
   ensureItems = (names: string[]) => {
     for (const name of names) {
-      if (!this.items[name]) {
+      if (!this.items.has(name)) {
         throw new Error(`Item ${name} not found in ${this.getAllItemNames().join(",")}`);
       }
     }
   }
 
   getAllItemNames = (): string[] => {
-    return Object.keys(this.items);
+    return Array.from(this.items.keys());
   };
 
-  getAllItems = (): Record<string, T> => this.items;
+  //getAllItems = (): Map<string, T> => this.items;
 
   getAllItemValues = (): T[] => {
-    return Object.values(this.items);
+    return Array.from(this.items.values());
   };
-
 
   getItemNamesLike = (likeName: string) => {
     likeName = likeName.toLowerCase();
+    const itemNames = this.getAllItemNames();
     if (likeName.endsWith("*")) {
       const prefix = likeName.slice(0, -1);
-      return Object.keys(this.items)
-        .filter(itemName => itemName.toLowerCase().startsWith(prefix));
+      return itemNames.filter(itemName => itemName.toLowerCase().startsWith(prefix));
     } else {
-      return Object.keys(this.items)
-        .filter(itemName => itemName.toLowerCase() === likeName);
+      return itemNames.filter(itemName => itemName.toLowerCase() === likeName);
     }
   }
 
@@ -83,21 +82,42 @@ export default class KeyedRegistry<T = any> {
   }
 
   getItemEntriesLike = (likeName: string) : [string, T][] => {
-    return this.getItemNamesLike(likeName).map(itemName => [itemName, this.items[itemName]]);
+    return this.getItemNamesLike(likeName).map(itemName => [itemName, this.items.get(itemName)!]);
   }
 
   forEach = (callback: (key: string, item: T) => void) => {
-    for (const key in this.items) {
-      callback(key, this.items[key]);
-    }
+    this.items.forEach((item, key) => {
+      callback(key, item);
+    });
   }
 
-  entries = () => Object.entries(this.items);
+  entries = () => Array.from(this.items.entries());
 
+  getLongestPrefixMatch = (input: string): { key: string; item: T; remainder: string } | undefined => {
+    let longestMatch: { key: string; item: T; remainder: string } | undefined;
 
-  registerAll = (items: Record<string, T>) => {
-    for (const name in items) {
-      this.register(name, items[name]);
+    for (const [key, item] of this.items) {
+      if (input === key || input.startsWith(key + " ")) {
+        if (!longestMatch || key.length > longestMatch.key.length) {
+          longestMatch = {
+            key,
+            item,
+            remainder: input.slice(key.length).trim()
+          };
+        }
+      }
+    }
+
+    return longestMatch;
+  };
+
+  registerAll = (items: Record<string, T> | Map<string, T>) => {
+    if (items instanceof Map) {
+      items.forEach((value, key) => this.register(key, value));
+    } else {
+      for (const name in items) {
+        this.register(name, items[name]);
+      }
     }
   }
 }
