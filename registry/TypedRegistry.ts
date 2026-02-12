@@ -1,24 +1,22 @@
-//type ConstructedTypeOf<ClassType> = abstract new (...args: any[]) => ClassType;
-
 import KeyedRegistry from "./KeyedRegistry.js";
 
-export interface NamedClass {
-  readonly name: string;
-}
+type ThingWithConstructor = {
+  constructor: Function;
+};
 
-export default class TypedRegistry<MinimumType extends NamedClass> {
+export default class TypedRegistry<MinimumType extends ThingWithConstructor> {
   protected registry = new KeyedRegistry<MinimumType>();
   getItems = this.registry.getAllItemValues;
 
   register = (...items: MinimumType[] | MinimumType[][]) => {
     for (const item of items.flat() as MinimumType[]) {
-      this.registry.register(item.name, item);
+      this.registry.register(item.constructor.name, item);
     }
   };
 
   unregister = (...items: MinimumType[]) => {
     for (const item of items) {
-      this.registry.unregister(item.name);
+      this.registry.unregister(item.constructor.name);
     }
   };
 
