@@ -1,3 +1,6 @@
+import {dedupe} from "../string/dedupe.ts";
+import {like} from "../string/like.ts";
+
 export default class KeyedRegistry<T = any> {
   protected items: Map<string, T> = new Map();
   private subscribers: Map<string, ((item: T) => void)[]> = new Map();
@@ -60,18 +63,18 @@ export default class KeyedRegistry<T = any> {
     return Array.from(this.items.values());
   };
 
-  getItemNamesLike = (likeName: string) => {
-    likeName = likeName.toLowerCase();
-    const itemNames = this.getAllItemNames();
-    if (likeName.endsWith("*")) {
-      const prefix = likeName.slice(0, -1);
-      return itemNames.filter(itemName => itemName.toLowerCase().startsWith(prefix));
-    } else {
-      return itemNames.filter(itemName => itemName.toLowerCase() === likeName);
+  getItemNamesLike = (likeName: string | string[]) : string[] => {
+    if (Array.isArray(likeName)) {
+      return dedupe(likeName.flatMap(name => this.getItemNamesLike(name)));
     }
+    const itemNames = this.getAllItemNames();
+    return itemNames.filter(itemName => like(likeName, itemName));
   }
 
-  ensureItemNamesLike = (likeName: string) => {
+  ensureItemNamesLike = (likeName: string | string[]) : string[] => {
+    if (Array.isArray(likeName)) {
+      return dedupe(likeName.flatMap(name => this.ensureItemNamesLike(name)));
+    }
     const matchingItems = this.getItemNamesLike(likeName);
     if (matchingItems.length === 0) {
       throw new Error(
@@ -81,7 +84,7 @@ export default class KeyedRegistry<T = any> {
     return matchingItems;
   }
 
-  getItemEntriesLike = (likeName: string) : [string, T][] => {
+  getItemEntriesLike = (likeName: string | string[]) : [string, T][] => {
     return this.getItemNamesLike(likeName).map(itemName => [itemName, this.items.get(itemName)!]);
   }
 
