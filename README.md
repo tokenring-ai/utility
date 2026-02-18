@@ -29,8 +29,8 @@ Or add to your `package.json`:
 The package is organized into logical modules:
 
 - **Buffer** (`buffer/`) - Binary data detection utilities
-- **Object utilities** (`object/`) - Object manipulation functions including `pick`, `omit`, `transform`, `isEmpty`, `deepMerge`, `parametricObjectFilter`, `pickValue`, and `requireFields`
-- **String utilities** (`string/`) - String processing and formatting functions including `convertBoolean`, `trimMiddle`, `shellEscape`, `joinDefault`, `formatLogMessages`, `wrapText`, `markdownList`, `numberedList`, `indent`, and `createAsciiTable`
+- **Object utilities** (`object/`) - Object manipulation functions including `pick`, `omit`, `transform`, `isEmpty`, `deepMerge`, `deepEquals`, `parametricObjectFilter`, `pickValue`, `requireFields`, and `pick`
+- **String utilities** (`string/`) - String processing and formatting functions including `convertBoolean`, `trimMiddle`, `shellEscape`, `joinDefault`, `formatLogMessages`, `wrapText`, `markdownList`, `numberedList`, `indent`, `codeBlock`, `errorToString`, `markdownTable`, `dedupe`, `like`, `numberedList`, and `createAsciiTable`
 - **HTTP utilities** (`http/`) - HTTP client helpers with retry logic including `HttpService` abstract class and `doFetchWithRetry`
 - **Promise utilities** (`promise/`) - Promise handling utilities including `abandon`, `waitForAbort`, and `backoff`
 - **Registry utilities** (`registry/`) - Registry and selector classes including `KeyedRegistry` and `TypedRegistry`
@@ -59,7 +59,7 @@ const isBinaryResult = isBinaryData(binaryBuffer); // true
 
 ### Object Utilities
 
-#### `pick<T, K>(obj: T, keys: K[]): Pick<T, K>`
+#### `pick<T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K>`
 
 Creates an object composed of the picked object properties.
 
@@ -71,7 +71,7 @@ const userInfo = pick(user, ['id', 'name']);
 // { id: 1, name: 'Alice' }
 ```
 
-#### `omit<T, K>(obj: T, keys: K[]): Omit<T, K>`
+#### `omit<T, K extends keyof T>(obj: T, keys: K[]): Omit<T, K>`
 
 Creates an object composed of the properties not included in the given keys array.
 
@@ -83,7 +83,7 @@ const publicInfo = omit(user, ['email']);
 // { id: 1, name: 'Alice' }
 ```
 
-#### `transform<T, R>(obj: T, transformer: <K extends keyof T>(value: T[K], key: K) => R): { [K in keyof T]: R }`
+#### `transform<T extends object, R>(obj: T, transformer: <K extends keyof T>(value: T[K], key: K) => R): { [K in keyof T]: R }`
 
 Transforms an object's values using a transformer function. The transformer function should accept both the value and the key.
 
@@ -121,6 +121,18 @@ const configA = { port: 3000, host: 'localhost' };
 const configB = { host: '127.0.0.1', cache: true };
 const merged = deepMerge(configA, configB);
 // { port: 3000, host: '127.0.0.1', cache: true }
+```
+
+#### `deepEquals(a: unknown, b: unknown): boolean`
+
+Deeply compares two values for equality. Handles objects, arrays, and primitives.
+
+```typescript
+import deepEquals from '@tokenring-ai/utility/object/deepEquals';
+
+deepEquals({ a: 1 }, { a: 1 }); // true
+deepEquals([1, 2], [1, 2]);     // true
+deepEquals({ a: 1 }, { a: 2 }); // false
 ```
 
 #### `parametricObjectFilter(requirements: ParametricObjectRequirements): (obj: Record<string, unknown>) => boolean`
@@ -234,12 +246,11 @@ import { shellEscape } from '@tokenring-ai/utility/string/shellEscape';
 
 const filename = "my file's name.txt";
 const command = `cat ${shellEscape(filename)}`;
-// "cat 'my file's\\\\\\\\'s name.txt'"
-```
+// "cat 'my file's'\"\"\"'s name.txt'"
 
 **Behavior:**
-- Returns empty string as `'''` if arg is falsy
-- Returns arg as-is if it matches `^[a-zA-Z0-9_\\\\-./:]+$` (no special characters)
+- Returns `''` if arg is falsy
+- Returns arg as-is if it matches `^[a-zA-Z0-9_\\-./:]+$` (no special characters)
 - Otherwise wraps in single quotes and escapes any single quotes within
 
 #### `joinDefault(separator: string, iterable: Iterable<string> | null | undefined, defaultValue?: OtherReturnType): string | OtherReturnType`
@@ -264,10 +275,13 @@ import formatLogMessages from '@tokenring-ai/utility/string/formatLogMessage';
 
 const output = formatLogMessages([
   'User loaded',
-  { id: 1, name: 'Alice' },
   new Error('Connection failed')
 ]);
-// 'User loaded [object Object] Error: Connection failed\n    at...'
+// 'User loaded Error: Connection failed\n    at...'
+
+// Note: Non-string, non-Error values are converted to strings using String()
+const outputWithObject = formatLogMessages(['User', { id: 1 }]);
+// 'User [object Object]'
 ```
 
 #### `createAsciiTable(data: string[][], options: TableOptions): string`
@@ -338,7 +352,7 @@ markdownList(['Item 1', 'Item 2', 'Item 3']);
 // '- Item 1\n- Item 2\n- Item 3'
 
 markdownList(['Item 1', 'Item 2'], 3);
-// '- Item 1\n- Item 2'
+// '   - Item 1\n   - Item 2'
 ```
 
 #### `numberedList(items: string[], indentLevel: number = 1): string`
@@ -352,7 +366,79 @@ numberedList(['Item 1', 'Item 2', 'Item 3']);
 // '1. Item 1\n2. Item 2\n3. Item 3'
 
 numberedList(['Item 1', 'Item 2'], 3);
-// '1. Item 1\n2. Item 2'
+// '   1. Item 1\n   2. Item 2'
+```
+
+#### `codeBlock(code: string, language: string = ''): string`
+
+Wraps code in a Markdown code block with optional language specification.
+
+```typescript
+import codeBlock from '@tokenring-ai/utility/string/codeBlock';
+
+const code = 'console.log("Hello, world!");';
+const block = codeBlock(code, 'typescript');
+// ```typescript
+// console.log("Hello, world!");
+// ```
+```
+
+#### `errorToString(error: any): string`
+
+Converts an error or error-like value to a string representation.
+
+```typescript
+import errorToString from '@tokenring-ai/utility/string/errorToString';
+
+errorToString('Error message');                    // 'Error message'
+errorToString(new Error('Something went wrong'));  // 'Error: Something went wrong\n    at...'
+errorToString(null);                               // 'Error was null'
+errorToString(undefined);                          // 'Error was undefined'
+```
+
+#### `markdownTable(columns: string[], rows: string[][]): string`
+
+Generates a Markdown table from columns and rows.
+
+```typescript
+import markdownTable from '@tokenring-ai/utility/string/markdownTable';
+
+const table = markdownTable(
+  ['Name', 'Age'],
+  [
+    ['Alice', '30'],
+    ['Bob', '25']
+  ]
+);
+// | Name  | Age |
+// |-------|-----|
+// | Alice | 30  |
+// | Bob   | 25  |
+```
+
+#### `dedupe(items: string[]): string[]`
+
+Removes duplicate strings from an array while preserving order.
+
+```typescript
+import { dedupe } from '@tokenring-ai/utility/string/dedupe';
+
+const items = ['a', 'b', 'a', 'c', 'b'];
+const unique = dedupe(items);
+// ['a', 'b', 'c']
+```
+
+#### `like(likeName: string, thing: string): boolean`
+
+Checks if a string matches a pattern. If the pattern ends with '*', it performs a prefix match. Otherwise, it performs an exact match (case-insensitive).
+
+```typescript
+import { like } from '@tokenring-ai/utility/string/like';
+
+like('db*', 'database');      // true
+like('db', 'database');       // false
+like('database', 'database'); // true
+like('DB', 'database');       // true (case-insensitive)
 ```
 
 ### HTTP Utilities
@@ -408,7 +494,7 @@ const response = await doFetchWithRetry('https://api.example.com/data', {
 
 **Retry logic:**
 - Max retries: 3
-- Initial delay: 500ms
+- Initial delay: 500ms (with random jitter up to 250ms)
 - Backoff multiplier: 2
 - Retries on: 429 (rate limit), 500-599 (server errors)
 - Immediate return on: 200-299, 300-399, 400-499 (other errors)
@@ -486,20 +572,21 @@ A generic registry for storing and retrieving items by string keys. Includes sup
 | `requireItemByName` | `requireItemByName(name: string): T` | Gets an item by name or throws |
 | `ensureItems` | `ensureItems(names: string[]): void` | Ensures all specified items exist (throws if any missing) |
 | `getAllItemNames` | `getAllItemNames(): string[]` | Gets all registered item names |
-| `getAllItems` | `getAllItems(): Record<string, T>` | Gets all items as a record |
 | `getAllItemValues` | `getAllItemValues(): T[]` | Gets all items as an array |
-| `getItemNamesLike` | `getItemNamesLike(likeName: string): string[]` | Finds items matching a prefix or exact name |
-| `ensureItemNamesLike` | `ensureItemNamesLike(likeName: string): string[]` | Finds items matching a pattern or throws |
-| `getItemEntriesLike` | `getItemEntriesLike(likeName: string): [string, T][]` | Gets entries matching a pattern |
+| `getItemNamesLike` | `getItemNamesLike(likeName: string | string[]): string[]` | Finds items matching a prefix or exact name |
+| `ensureItemNamesLike` | `ensureItemNamesLike(likeName: string | string[]): string[]` | Finds items matching a pattern or throws |
+| `getItemEntriesLike` | `getItemEntriesLike(likeName: string | string[]): [string, T][]` | Gets entries matching a pattern |
 | `forEach` | `forEach(callback: (key: string, item: T) => void): void` | Iterates over all items |
 | `entries` | `entries(): [string, T][]` | Gets all entries |
-| `registerAll` | `registerAll(items: Record<string, T>): void` | Registers multiple items |
+| `registerAll` | `registerAll(items: Record<string, T> | Map<string, T>): void` | Registers multiple items |
+| `getLongestPrefixMatch` | `getLongestPrefixMatch(input: string): { key: string; item: T; remainder: string } | undefined` | Finds the longest matching key prefix |
 
 **Pattern matching with `getItemNamesLike`:**
 The `likeName` parameter supports:
 - Prefix matching: `'db*'` matches `'database'`, `'dbconnection'`, etc.
 - Exact matching: `'db'` matches `'db'` exactly
 - Case-insensitive matching
+- Array of patterns: `['db*', 'cache*']`
 
 ```typescript
 import KeyedRegistry from '@tokenring-ai/utility/registry/KeyedRegistry';
@@ -526,17 +613,21 @@ dbRegistry.waitForItemByName('postgres', (item) => {
 
 // Ensure items exist
 dbRegistry.ensureItems(['postgres', 'mysql']);
+
+// Longest prefix match (useful for command routing)
+const match = dbRegistry.getLongestPrefixMatch('db connect');
+// { key: 'db', item: ..., remainder: 'connect' }
 ```
 
-#### `TypedRegistry<MinimumType extends NamedClass>`
+#### `TypedRegistry<MinimumType extends ThingWithConstructor>`
 
-Registry for classes with a `name` static property. Automatically registers and retrieves classes by type.
+Registry for classes with a `constructor` property. Automatically registers and retrieves classes by type.
 
 **Interface:**
 
 ```typescript
-interface NamedClass {
-  name: string;
+interface ThingWithConstructor {
+  constructor: Function;
 }
 ```
 
@@ -544,8 +635,8 @@ interface NamedClass {
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `register` | `register(...items: MinimumType[] | MinimumType[][]): void` | Registers items by their `name` property |
-| `unregister` | `unregister(...items: MinimumType[]): void` | Unregisters items by their `name` property |
+| `register` | `register(...items: MinimumType[] | MinimumType[][]): void` | Registers items by their `constructor.name` property |
+| `unregister` | `unregister(...items: MinimumType[]): void` | Unregisters items by their `constructor.name` property |
 | `getItems` | `getItems: MinimumType[]` | Gets all registered items |
 | `waitForItemByType` | `waitForItemByType<R extends MinimumType>(type: abstract new (...args: any[]) => R, callback: (item: R) => void): void` | Waits for item by type |
 | `getItemByType` | `getItemByType<R extends MinimumType>(type: abstract new (...args: any[]) => R): R | undefined` | Gets item by type |
@@ -554,9 +645,9 @@ interface NamedClass {
 | `requireItemByName` | `requireItemByName(name: string): MinimumType` | Gets item by name or throws |
 
 ```typescript
-import TypedRegistry, { NamedClass } from '@tokenring-ai/utility/registry/TypedRegistry';
+import TypedRegistry from '@tokenring-ai/utility/registry/TypedRegistry';
 
-interface Database extends NamedClass {
+interface Database {
   connect(): void;
 }
 
@@ -651,7 +742,7 @@ type PrimitiveType = string | number | boolean | null | undefined;
 ### Basic Object Manipulation
 
 ```typescript
-import { pick, omit, transform, pickValue, deepMerge, isEmpty, parametricObjectFilter, requireFields } from '@tokenring-ai/utility/object';
+import { pick, omit, transform, pickValue, deepMerge, deepEquals, isEmpty, parametricObjectFilter, requireFields } from '@tokenring-ai/utility/object';
 
 const user = {
   id: 1,
@@ -686,6 +777,9 @@ const configA = { port: 3000, host: 'localhost' };
 const configB = { host: '127.0.0.1', cache: true };
 const merged = deepMerge(configA, configB);
 // { port: 3000, host: '127.0.0.1', cache: true }
+
+// Deep equals
+deepEquals({ a: 1 }, { a: 1 }); // true
 
 // Parametric filtering
 const filter = parametricObjectFilter({
@@ -724,7 +818,10 @@ import {
   formatLogMessages,
   markdownList,
   numberedList,
-  indent
+  indent,
+  codeBlock,
+  errorToString,
+  markdownTable
 } from '@tokenring-ai/utility/string';
 
 // Boolean conversion
@@ -735,12 +832,12 @@ convertBoolean('no');     // false
 
 // String shrinking
 trimMiddle('FullDocumentWithLotsOfText', 10, 10);
-// 'FilenameExa...ample.txt'
+// 'FilenameExa...omitted...xample.txt'
 
 // Shell escaping
 const filename = "my file's name.txt";
 const command = `rm ${shellEscape(filename)}`;
-// "rm 'my file's\\\\\\\\'s name.txt'"
+// "rm 'my file's'\"\"\"'s name.txt'"
 
 // Join with default
 const items = null;
@@ -763,13 +860,23 @@ const lines = wrapText('This is a long line of text that needs to be wrapped', 3
 // Log formatting
 const output = formatLogMessages([
   'User loaded',
-  { id: 1, name: 'Alice' },
   new Error('Connection failed')
 ]);
 
-// Markdown lists
+// Markdown list
 const list = markdownList(['Item 1', 'Item 2', 'Item 3'], 2);
-const numbered = numberedList(['Step 1', 'Step 2']);
+
+// Markdown table
+const mdTable = markdownTable(
+  ['Name', 'Age'],
+  [['Alice', '30'], ['Bob', '25']]
+);
+
+// Code block
+const code = codeBlock('console.log("hello")', 'typescript');
+
+// Error to string
+const errorStr = errorToString(new Error('Something went wrong'));
 
 // Indent text
 const indented = indent('line1\nline2', 2);
@@ -807,7 +914,6 @@ const userService = new UserService();
 ```typescript
 import KeyedRegistry from '@tokenring-ai/utility/registry/KeyedRegistry';
 import TypedRegistry from '@tokenring-ai/utility/registry/TypedRegistry';
-import { NamedClass } from '@tokenring-ai/utility/registry/TypedRegistry';
 
 // Create a keyed registry for connections
 const dbRegistry = new KeyedRegistry<string>();
@@ -831,7 +937,7 @@ dbRegistry.waitForItemByName('postgres', (item) => {
 });
 
 // Using TypedRegistry
-interface Database extends NamedClass {
+interface Database {
   connect(): void;
 }
 
