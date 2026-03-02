@@ -29,13 +29,43 @@ Or add to your `package.json`:
 The package is organized into logical modules:
 
 - **Buffer** (`buffer/`) - Binary data detection utilities
-- **Object utilities** (`object/`) - Object manipulation functions including `pick`, `omit`, `transform`, `isEmpty`, `deepMerge`, `deepEquals`, `parametricObjectFilter`, `pickValue`, `requireFields`, and `pick`
-- **String utilities** (`string/`) - String processing and formatting functions including `convertBoolean`, `trimMiddle`, `shellEscape`, `joinDefault`, `formatLogMessages`, `wrapText`, `markdownList`, `numberedList`, `indent`, `codeBlock`, `errorToString`, `markdownTable`, `dedupe`, `like`, `numberedList`, and `createAsciiTable`
+- **Object utilities** (`object/`) - Object manipulation functions including `pick`, `omit`, `transform`, `isEmpty`, `deepMerge`, `deepEquals`, `parametricObjectFilter`, `pickValue`, and `requireFields`
+- **String utilities** (`string/`) - String processing and formatting functions including `convertBoolean`, `trimMiddle`, `shellEscape`, `joinDefault`, `formatLogMessages`, `wrapText`, `markdownList`, `numberedList`, `indent`, `codeBlock`, `errorToString`, `markdownTable`, `dedupe`, `like`, and `createAsciiTable`
 - **HTTP utilities** (`http/`) - HTTP client helpers with retry logic including `HttpService` abstract class and `doFetchWithRetry`
 - **Promise utilities** (`promise/`) - Promise handling utilities including `abandon`, `waitForAbort`, and `backoff`
 - **Registry utilities** (`registry/`) - Registry and selector classes including `KeyedRegistry` and `TypedRegistry`
 - **Timer utilities** (`timer/`) - Throttle and debounce functions
 - **Type definitions** (`types.ts`) - Common type definitions
+
+## Testing
+
+This package uses vitest for unit testing.
+
+Run tests:
+
+```bash
+bun test
+```
+
+Run tests in watch mode:
+
+```bash
+bun test:watch
+```
+
+Run tests with coverage:
+
+```bash
+bun test:coverage
+```
+
+## Build
+
+```bash
+bun build
+```
+
+This runs TypeScript type checking without emitting files.
 
 ## API Documentation
 
@@ -123,6 +153,8 @@ const merged = deepMerge(configA, configB);
 // { port: 3000, host: '127.0.0.1', cache: true }
 ```
 
+**Note:** This function uses an internal `isPlainObject` helper to determine if a value is a plain object (created with `{}` or `new Object()`) versus special objects like `Date`, `Array`, etc.
+
 #### `deepEquals(a: unknown, b: unknown): boolean`
 
 Deeply compares two values for equality. Handles objects, arrays, and primitives.
@@ -137,7 +169,13 @@ deepEquals({ a: 1 }, { a: 2 }); // false
 
 #### `parametricObjectFilter(requirements: ParametricObjectRequirements): (obj: Record<string, unknown>) => boolean`
 
-Creates a filter function based on parameter requirements. Supports numeric comparisons (>, <, >=, <=, =) and string equality. The 'name' field is treated specially - it will only match if the value exactly equals the given value and the comparison is not a string comparison operator.
+Creates a filter function based on parameter requirements. Supports numeric comparisons (`>`, `<`, `>=`, `<=`, `=`) and string equality. The 'name' field is treated specially - it will only match if the value exactly equals the given value.
+
+**ParametricObjectRequirements Type:**
+
+```typescript
+type ParametricObjectRequirements = Record<string, number | string | null | undefined>;
+```
 
 ```typescript
 import parametricObjectFilter from '@tokenring-ai/utility/object/parametricObjectFilter';
@@ -157,15 +195,9 @@ const filtered = users.filter(filter);
 // [{ name: 'Alice', age: 25 }, { name: 'Charlie', age: 30 }]
 ```
 
-**ParametricObjectRequirements Type:**
-
-```typescript
-type ParametricObjectRequirements = Record<string, number | string | null | undefined>;
-```
-
 **Supported Operators:**
 - Numeric: `>`, `<`, `>=`, `<=`, `=`, `` (no operator)
-- String: `` (no operator) only for 'name' field
+- String: `` (no operator) or `=` only for 'name' field
 
 #### `pickValue<T extends object>(obj: T, key: unknown): T[keyof T] | undefined`
 
@@ -184,7 +216,7 @@ const invalidKey = pickValue(user, 'invalid');
 
 #### `requireFields<T extends Object>(obj: T, required: (keyof T)[], context: string = "Config"): void`
 
-Validates that an object contains all required fields. Throws an error if any required field is missing or empty.
+Validates that an object contains all required fields. Throws an error if any required field is missing, null, undefined, or empty string.
 
 ```typescript
 import requireFields from '@tokenring-ai/utility/object/requireFields';
@@ -203,7 +235,7 @@ requireFields(config, ['port', 'host', 'username', 'password'], 'Config');
 **Parameters:**
 - `obj`: The object to validate
 - `required`: Array of required field names
-- `context`: Optional context string for error messages
+- `context`: Optional context string for error messages (default: "Config")
 
 ### String Utilities
 
@@ -247,13 +279,14 @@ import { shellEscape } from '@tokenring-ai/utility/string/shellEscape';
 const filename = "my file's name.txt";
 const command = `cat ${shellEscape(filename)}`;
 // "cat 'my file's'\"\"\"'s name.txt'"
+```
 
 **Behavior:**
 - Returns `''` if arg is falsy
-- Returns arg as-is if it matches `^[a-zA-Z0-9_\\-./:]+$` (no special characters)
+- Returns arg as-is if it matches `^[a-zA-Z0-9_\-./:]+$` (no special characters)
 - Otherwise wraps in single quotes and escapes any single quotes within
 
-#### `joinDefault(separator: string, iterable: Iterable<string> | null | undefined, defaultValue?: OtherReturnType): string | OtherReturnType`
+#### `joinDefault<OtherReturnType>(separator: string, iterable: Iterable<string> | null | undefined, defaultValue?: OtherReturnType): string | OtherReturnType`
 
 Joins strings with a separator, providing a default value if the iterable is empty. Preserves the type of the default value.
 
@@ -261,7 +294,7 @@ Joins strings with a separator, providing a default value if the iterable is emp
 import joinDefault from '@tokenring-ai/utility/string/joinDefault';
 
 joinDefault(', ', ['a', 'b', 'c']);       // 'a, b, c'
-joinDefault(', ', null, 'none');           // 'none'
+joinDefault(', ', null, 'none');          // 'none'
 joinDefault(', ', ['single']);            // 'single'
 joinDefault(', ', null, 0);               // 0 (preserves type)
 ```
@@ -329,7 +362,7 @@ const lines = wrapText('This is a long line of text that needs to be wrapped', 2
 
 #### `indent(input: string | string[], level: number): string`
 
-Indents lines of text by a specified level. Handles both string and array of strings input.
+Indents lines of text by a specified level. Handles both string and array of strings input. Trims each line before indenting.
 
 ```typescript
 import indent from '@tokenring-ai/utility/string/indent';
@@ -430,7 +463,7 @@ const unique = dedupe(items);
 
 #### `like(likeName: string, thing: string): boolean`
 
-Checks if a string matches a pattern. If the pattern ends with '*', it performs a prefix match. Otherwise, it performs an exact match (case-insensitive).
+Checks if a string matches a pattern. If the pattern ends with `*`, it performs a prefix match. Otherwise, it performs an exact match (case-insensitive).
 
 ```typescript
 import { like } from '@tokenring-ai/utility/string/like';
@@ -447,16 +480,16 @@ like('DB', 'database');       // true (case-insensitive)
 
 Base class for HTTP services with automatic JSON parsing and error handling. Extend this class to create typed HTTP clients.
 
+**Abstract Properties:**
+- `baseUrl`: string - The base URL for all requests
+- `defaultHeaders`: Record<string, string> - Default headers for all requests
+
 **Methods:**
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
 | `fetchJson` | `fetchJson(path: string, opts: RequestInit, context: string): Promise<any>` | Performs a JSON fetch with automatic retry logic |
 | `parseJsonOrThrow` | `parseJsonOrThrow(res: Response, context: string): Promise<any>` | Parses JSON response or throws an error |
-
-**Abstract Properties:**
-- `baseUrl`: string - The base URL for all requests
-- `defaultHeaders`: Record<string, string> - Default headers for all requests
 
 ```typescript
 import { HttpService } from '@tokenring-ai/utility/http/HttpService';
@@ -517,7 +550,7 @@ abandon(fetchPromise); // Consumes the promise silently
 Waits for an AbortSignal to be triggered and resolves a promise with the result of the provided callback function.
 
 ```typescript
-import { waitForAbort } from '@tokenring-ai/utility/promise/waitForAbort';
+import waitForAbort from '@tokenring-ai/utility/promise/waitForAbort';
 
 const controller = new AbortController();
 const signal = controller.signal;
@@ -652,17 +685,15 @@ interface Database {
 }
 
 class PostgresDatabase implements Database {
-  static name = 'postgres';
   connect() { /* ... */ }
 }
 
 class MySqlDatabase implements Database {
-  static name = 'mysql';
   connect() { /* ... */ }
 }
 
 const typedRegistry = new TypedRegistry<Database>();
-typedRegistry.register(PostgresDatabase, MySqlDatabase);
+typedRegistry.register(new PostgresDatabase(), new MySqlDatabase());
 
 const db = typedRegistry.getItemByType(PostgresDatabase);
 db.connect();
@@ -672,7 +703,7 @@ db.connect();
 
 #### `throttle<T extends (...args: any[]) => any>(func: T): (minWait: number, ...args: Parameters<T>) => void`
 
-Creates a throttled function that only invokes the provided function if at least `minWait` milliseconds have elapsed since the last invocation. If multiple calls are made within the throttle period, only the last call will be executed at the end of the period.
+Creates a throttled function that only invokes the provided function if at least `minWait` milliseconds have elapsed since the last invocation. The `minWait` parameter is passed when calling the throttled function, not during creation. If multiple calls are made within the throttle period, only the last call will be executed at the end of the period.
 
 ```typescript
 import throttle from '@tokenring-ai/utility/timer/throttle';
@@ -832,7 +863,7 @@ convertBoolean('no');     // false
 
 // String shrinking
 trimMiddle('FullDocumentWithLotsOfText', 10, 10);
-// 'FilenameExa...omitted...xample.txt'
+// 'FullDocumen...omitted...xt'
 
 // Shell escaping
 const filename = "my file's name.txt";
@@ -942,17 +973,15 @@ interface Database {
 }
 
 class PostgresDatabase implements Database {
-  static name = 'postgres';
   connect() { /* ... */ }
 }
 
 class MySqlDatabase implements Database {
-  static name = 'mysql';
   connect() { /* ... */ }
 }
 
 const typedRegistry = new TypedRegistry<Database>();
-typedRegistry.register(PostgresDatabase, MySqlDatabase);
+typedRegistry.register(new PostgresDatabase(), new MySqlDatabase());
 
 const db = typedRegistry.getItemByType(PostgresDatabase);
 db.connect();
@@ -1030,43 +1059,14 @@ const isText = isBinaryData(textBuffer);
 console.log('Is text:', isText);
 ```
 
-## Testing
+## Dependencies
 
-This package uses vitest for unit testing. The testing setup is configured in `vitest.config.ts`.
+- `@tokenring-ai/agent`: ^0.2.0
 
-Run tests:
+## Development Dependencies
 
-```bash
-bun test
-```
-
-Run tests in watch mode:
-
-```bash
-bun test:watch
-```
-
-Run tests with coverage:
-
-```bash
-bun test:coverage
-```
-
-## Development
-
-### Build
-
-```bash
-bun build
-```
-
-This runs TypeScript type checking without emitting files.
-
-### Dependencies
-
-```bash
-bun install
-```
+- `vitest`: ^4.0.18
+- `typescript`: ^5.9.3
 
 ## License
 
