@@ -18,8 +18,8 @@ Or add to your `package.json`:
 
 ```json
 {
-  "dependencies": {
-    "@tokenring-ai/utility": "^0.2.0"
+  \"dependencies\": {
+    \"@tokenring-ai/utility\": \"0.2.0\"
   }
 }
 ```
@@ -214,7 +214,7 @@ const invalidKey = pickValue(user, 'invalid');
 // undefined
 ```
 
-#### `requireFields<T extends Object>(obj: T, required: (keyof T)[], context: string = "Config"): void`
+#### `requireFields<T extends Object>(obj: T, required: (keyof T)[], context: string = \"Config\"): void`
 
 Validates that an object contains all required fields. Throws an error if any required field is missing, null, undefined, or empty string.
 
@@ -229,13 +229,13 @@ const config = {
 };
 
 requireFields(config, ['port', 'host', 'username', 'password'], 'Config');
-// Throws: Config: Missing required field "username"
+// Throws: Config: Missing required field \"username\"
 ```
 
 **Parameters:**
 - `obj`: The object to validate
 - `required`: Array of required field names
-- `context`: Optional context string for error messages (default: "Config")
+- `context`: Optional context string for error messages (default: \"Config\")
 
 ### String Utilities
 
@@ -276,14 +276,14 @@ Safely escapes a string for use in shell commands.
 ```typescript
 import { shellEscape } from '@tokenring-ai/utility/string/shellEscape';
 
-const filename = "my file's name.txt";
+const filename = \"my file's name.txt\";
 const command = `cat ${shellEscape(filename)}`;
-// "cat 'my file's'\"\"\"'s name.txt'"
+// \"cat 'my file's'\\\"\\\"\\\"'s name.txt'\"
 ```
 
 **Behavior:**
 - Returns `''` if arg is falsy
-- Returns arg as-is if it matches `^[a-zA-Z0-9_\-./:]+$` (no special characters)
+- Returns arg as-is if it matches `^[a-zA-Z0-9_\\-./:]+$` (no special characters)
 - Otherwise wraps in single quotes and escapes any single quotes within
 
 #### `joinDefault<OtherReturnType>(separator: string, iterable: Iterable<string> | null | undefined, defaultValue?: OtherReturnType): string | OtherReturnType`
@@ -310,7 +310,7 @@ const output = formatLogMessages([
   'User loaded',
   new Error('Connection failed')
 ]);
-// 'User loaded Error: Connection failed\n    at...'
+// 'User loaded Error: Connection failed\\n    at...'
 
 // Note: Non-string, non-Error values are converted to strings using String()
 const outputWithObject = formatLogMessages(['User', { id: 1 }]);
@@ -354,7 +354,7 @@ const table = createAsciiTable(
 Wraps text into an array of strings based on max width, preserving paragraphs.
 
 ```typescript
-import wrapText from '@tokenring-ai/utility/string/wrapText';
+import { wrapText } from '@tokenring-ai/utility/string/wrapText';
 
 const lines = wrapText('This is a long line of text that needs to be wrapped', 20);
 // ['This is a long', 'line of text that', 'needs to be', 'wrapped']
@@ -367,11 +367,11 @@ Indents lines of text by a specified level. Handles both string and array of str
 ```typescript
 import indent from '@tokenring-ai/utility/string/indent';
 
-indent('line1\nline2', 2);
-// '  line1\n  line2'
+indent('line1\\nline2', 2);
+// '  line1\\n  line2'
 
 indent(['line1', 'line2', 'line3'], 3);
-// '     line1\n     line2\n     line3'
+// '     line1\\n     line2\\n     line3'
 ```
 
 #### `markdownList(items: string[], indentLevel: number = 1): string`
@@ -382,10 +382,10 @@ Creates a markdown list with the specified items and indentation level.
 import markdownList from '@tokenring-ai/utility/string/markdownList';
 
 markdownList(['Item 1', 'Item 2', 'Item 3']);
-// '- Item 1\n- Item 2\n- Item 3'
+// '- Item 1\\n- Item 2\\n- Item 3'
 
 markdownList(['Item 1', 'Item 2'], 3);
-// '   - Item 1\n   - Item 2'
+// '   - Item 1\\n   - Item 2'
 ```
 
 #### `numberedList(items: string[], indentLevel: number = 1): string`
@@ -396,10 +396,10 @@ Creates a numbered list with the specified items and indentation level.
 import numberedList from '@tokenring-ai/utility/string/numberedList';
 
 numberedList(['Item 1', 'Item 2', 'Item 3']);
-// '1. Item 1\n2. Item 2\n3. Item 3'
+// '1. Item 1\\n2. Item 2\\n3. Item 3'
 
 numberedList(['Item 1', 'Item 2'], 3);
-// '   1. Item 1\n   2. Item 2'
+// '   1. Item 1\\n   2. Item 2'
 ```
 
 #### `codeBlock(code: string, language: string = ''): string`
@@ -409,10 +409,10 @@ Wraps code in a Markdown code block with optional language specification.
 ```typescript
 import codeBlock from '@tokenring-ai/utility/string/codeBlock';
 
-const code = 'console.log("Hello, world!");';
+const code = 'console.log(\"Hello, world!\");';
 const block = codeBlock(code, 'typescript');
 // ```typescript
-// console.log("Hello, world!");
+// console.log(\"Hello, world!\");
 // ```
 ```
 
@@ -424,7 +424,7 @@ Converts an error or error-like value to a string representation.
 import errorToString from '@tokenring-ai/utility/string/errorToString';
 
 errorToString('Error message');                    // 'Error message'
-errorToString(new Error('Something went wrong'));  // 'Error: Something went wrong\n    at...'
+errorToString(new Error('Something went wrong'));  // 'Error: Something went wrong\\n    at...'
 errorToString(null);                               // 'Error was null'
 errorToString(undefined);                          // 'Error was undefined'
 ```
@@ -488,8 +488,8 @@ Base class for HTTP services with automatic JSON parsing and error handling. Ext
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `fetchJson` | `fetchJson(path: string, opts: RequestInit, context: string): Promise<any>` | Performs a JSON fetch with automatic retry logic |
 | `parseJsonOrThrow` | `parseJsonOrThrow(res: Response, context: string): Promise<any>` | Parses JSON response or throws an error |
+| `fetchJson` | `fetchJson(path: string, opts: RequestInit, context: string): Promise<any>` | Performs a JSON fetch with automatic retry logic |
 
 ```typescript
 import { HttpService } from '@tokenring-ai/utility/http/HttpService';
@@ -674,8 +674,6 @@ interface ThingWithConstructor {
 | `waitForItemByType` | `waitForItemByType<R extends MinimumType>(type: abstract new (...args: any[]) => R, callback: (item: R) => void): void` | Waits for item by type |
 | `getItemByType` | `getItemByType<R extends MinimumType>(type: abstract new (...args: any[]) => R): R | undefined` | Gets item by type |
 | `requireItemByType` | `requireItemByType<R extends MinimumType>(type: abstract new (...args: any[]) => R): R` | Gets item by type or throws |
-| `getItemByName` | `getItemByName(name: string): MinimumType | undefined` | Gets item by name |
-| `requireItemByName` | `requireItemByName(name: string): MinimumType` | Gets item by name or throws |
 
 ```typescript
 import TypedRegistry from '@tokenring-ai/utility/registry/TypedRegistry';
@@ -866,9 +864,9 @@ trimMiddle('FullDocumentWithLotsOfText', 10, 10);
 // 'FullDocumen...omitted...xt'
 
 // Shell escaping
-const filename = "my file's name.txt";
+const filename = \"my file's name.txt\";
 const command = `rm ${shellEscape(filename)}`;
-// "rm 'my file's'\"\"\"'s name.txt'"
+// \"rm 'my file's'\\\"\\\"\\\"'s name.txt'\"
 
 // Join with default
 const items = null;
@@ -904,13 +902,13 @@ const mdTable = markdownTable(
 );
 
 // Code block
-const code = codeBlock('console.log("hello")', 'typescript');
+const code = codeBlock('console.log(\"hello\")', 'typescript');
 
 // Error to string
 const errorStr = errorToString(new Error('Something went wrong'));
 
 // Indent text
-const indented = indent('line1\nline2', 2);
+const indented = indent('line1\\nline2', 2);
 ```
 
 ### HTTP Service Example
@@ -1061,7 +1059,7 @@ console.log('Is text:', isText);
 
 ## Dependencies
 
-- `@tokenring-ai/agent`: ^0.2.0
+- `@tokenring-ai/agent`: 0.2.0
 
 ## Development Dependencies
 
