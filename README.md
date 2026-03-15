@@ -1,6 +1,6 @@
 # @tokenring-ai/utility
 
-A comprehensive collection of general-purpose utility functions and classes used across the Token Ring ecosystem. This package provides reusable helpers for common programming tasks including object manipulation, string processing, HTTP operations, promise handling, registry management, and timer utilities.
+A comprehensive collection of general-purpose utility functions and classes used across the Token Ring ecosystem. This package provides reusable helpers for common programming tasks including object manipulation, string processing, HTTP operations, promise handling, registry management, timer utilities, and environment management.
 
 ## Overview
 
@@ -18,8 +18,8 @@ Or add to your `package.json`:
 
 ```json
 {
-  \"dependencies\": {
-    \"@tokenring-ai/utility\": \"0.2.0\"
+  "dependencies": {
+    "@tokenring-ai/utility": "0.2.0"
   }
 }
 ```
@@ -29,12 +29,13 @@ Or add to your `package.json`:
 The package is organized into logical modules:
 
 - **Buffer** (`buffer/`) - Binary data detection utilities
-- **Object utilities** (`object/`) - Object manipulation functions including `pick`, `omit`, `transform`, `isEmpty`, `deepMerge`, `deepEquals`, `parametricObjectFilter`, `pickValue`, and `requireFields`
-- **String utilities** (`string/`) - String processing and formatting functions including `convertBoolean`, `trimMiddle`, `shellEscape`, `joinDefault`, `formatLogMessages`, `wrapText`, `markdownList`, `numberedList`, `indent`, `codeBlock`, `errorToString`, `markdownTable`, `dedupe`, `like`, and `createAsciiTable`
-- **HTTP utilities** (`http/`) - HTTP client helpers with retry logic including `HttpService` abstract class and `doFetchWithRetry`
+- **Object utilities** (`object/`) - Object manipulation functions including `pick`, `omit`, `transform`, `isEmpty`, `deepMerge`, `deepEquals`, `isPlainObject`, `parametricObjectFilter`, `pickValue`, and `requireFields`
+- **String utilities** (`string/`) - String processing and formatting functions including `convertBoolean`, `trimMiddle`, `shellEscape`, `joinDefault`, `formatLogMessages`, `wrapText`, `markdownList`, `numberedList`, `indent`, `codeBlock`, `errorToString`, `markdownTable`, `dedupe`, `like`, `createAsciiTable`, `generateHumanId`, `intelligentTruncate`, `oneOf`, `getRandomItem`, `workingMessages`, and `ridiculousMessages`
+- **HTTP utilities** (`http/`) - HTTP client helpers with retry logic including `HttpService` abstract class, `doFetchWithRetry`, and `cachedDataRetriever`
 - **Promise utilities** (`promise/`) - Promise handling utilities including `abandon`, `waitForAbort`, and `backoff`
 - **Registry utilities** (`registry/`) - Registry and selector classes including `KeyedRegistry` and `TypedRegistry`
 - **Timer utilities** (`timer/`) - Throttle and debounce functions
+- **Environment utilities** (`env/`) - Environment variable management including `defaultEnv`, `isProductionEnvironment`, and `isDevelopmentEnvironment`
 - **Type definitions** (`types.ts`) - Common type definitions
 
 ## Testing
@@ -167,9 +168,22 @@ deepEquals([1, 2], [1, 2]);     // true
 deepEquals({ a: 1 }, { a: 2 }); // false
 ```
 
+#### `isPlainObject(value: unknown): value is Record<string, any>`
+
+Checks if a value is a plain object (not an array, Date, or other special object). Returns true if the value was created with `{}` or `new Object()`.
+
+```typescript
+import { isPlainObject } from '@tokenring-ai/utility/object/isPlainObject';
+
+isPlainObject({});           // true
+isPlainObject([]);           // false
+isPlainObject(new Date());   // false
+isPlainObject(null);         // false
+```
+
 #### `parametricObjectFilter(requirements: ParametricObjectRequirements): (obj: Record<string, unknown>) => boolean`
 
-Creates a filter function based on parameter requirements. Supports numeric comparisons (`>`, `<`, `>=`, `<=`, `=`) and string equality. The 'name' field is treated specially - it will only match if the value exactly equals the given value.
+Creates a filter function based on parameter requirements. Supports numeric comparisons (`>`, `<`, `>=`, `<=`, `=`) and string equality. The 'name' field is treated specially - it will match any string value.
 
 **ParametricObjectRequirements Type:**
 
@@ -214,7 +228,7 @@ const invalidKey = pickValue(user, 'invalid');
 // undefined
 ```
 
-#### `requireFields<T extends Object>(obj: T, required: (keyof T)[], context: string = \"Config\"): void`
+#### `requireFields<T extends Object>(obj: T, required: (keyof T)[], context: string = "Config"): void`
 
 Validates that an object contains all required fields. Throws an error if any required field is missing, null, undefined, or empty string.
 
@@ -229,13 +243,13 @@ const config = {
 };
 
 requireFields(config, ['port', 'host', 'username', 'password'], 'Config');
-// Throws: Config: Missing required field \"username\"
+// Throws: Config: Missing required field "username"
 ```
 
 **Parameters:**
 - `obj`: The object to validate
 - `required`: Array of required field names
-- `context`: Optional context string for error messages (default: \"Config\")
+- `context`: Optional context string for error messages (default: "Config")
 
 ### String Utilities
 
@@ -276,14 +290,14 @@ Safely escapes a string for use in shell commands.
 ```typescript
 import { shellEscape } from '@tokenring-ai/utility/string/shellEscape';
 
-const filename = \"my file's name.txt\";
+const filename = "my file's name.txt";
 const command = `cat ${shellEscape(filename)}`;
-// \"cat 'my file's'\\\"\\\"\\\"'s name.txt'\"
+// "cat 'my file's'\\\"\\\"\\\"'s name.txt'"
 ```
 
 **Behavior:**
 - Returns `''` if arg is falsy
-- Returns arg as-is if it matches `^[a-zA-Z0-9_\\-./:]+$` (no special characters)
+- Returns arg as-is if it matches `^[a-zA-Z0-9_\-./:]+$` (no special characters)
 - Otherwise wraps in single quotes and escapes any single quotes within
 
 #### `joinDefault<OtherReturnType>(separator: string, iterable: Iterable<string> | null | undefined, defaultValue?: OtherReturnType): string | OtherReturnType`
@@ -310,7 +324,7 @@ const output = formatLogMessages([
   'User loaded',
   new Error('Connection failed')
 ]);
-// 'User loaded Error: Connection failed\\n    at...'
+// 'User loaded Error: Connection failed\n    at...'
 
 // Note: Non-string, non-Error values are converted to strings using String()
 const outputWithObject = formatLogMessages(['User', { id: 1 }]);
@@ -367,11 +381,11 @@ Indents lines of text by a specified level. Handles both string and array of str
 ```typescript
 import indent from '@tokenring-ai/utility/string/indent';
 
-indent('line1\\nline2', 2);
-// '  line1\\n  line2'
+indent('line1\nline2', 2);
+// '  line1\n  line2'
 
 indent(['line1', 'line2', 'line3'], 3);
-// '     line1\\n     line2\\n     line3'
+// '     line1\n     line2\n     line3'
 ```
 
 #### `markdownList(items: string[], indentLevel: number = 1): string`
@@ -382,10 +396,10 @@ Creates a markdown list with the specified items and indentation level.
 import markdownList from '@tokenring-ai/utility/string/markdownList';
 
 markdownList(['Item 1', 'Item 2', 'Item 3']);
-// '- Item 1\\n- Item 2\\n- Item 3'
+// '- Item 1\n- Item 2\n- Item 3'
 
 markdownList(['Item 1', 'Item 2'], 3);
-// '   - Item 1\\n   - Item 2'
+// '   - Item 1\n   - Item 2'
 ```
 
 #### `numberedList(items: string[], indentLevel: number = 1): string`
@@ -396,10 +410,10 @@ Creates a numbered list with the specified items and indentation level.
 import numberedList from '@tokenring-ai/utility/string/numberedList';
 
 numberedList(['Item 1', 'Item 2', 'Item 3']);
-// '1. Item 1\\n2. Item 2\\n3. Item 3'
+// '1. Item 1\n2. Item 2\n3. Item 3'
 
 numberedList(['Item 1', 'Item 2'], 3);
-// '   1. Item 1\\n   2. Item 2'
+// '   1. Item 1\n   2. Item 2'
 ```
 
 #### `codeBlock(code: string, language: string = ''): string`
@@ -409,10 +423,10 @@ Wraps code in a Markdown code block with optional language specification.
 ```typescript
 import codeBlock from '@tokenring-ai/utility/string/codeBlock';
 
-const code = 'console.log(\"Hello, world!\");';
+const code = 'console.log("Hello, world!");';
 const block = codeBlock(code, 'typescript');
 // ```typescript
-// console.log(\"Hello, world!\");
+// console.log("Hello, world!");
 // ```
 ```
 
@@ -424,7 +438,7 @@ Converts an error or error-like value to a string representation.
 import errorToString from '@tokenring-ai/utility/string/errorToString';
 
 errorToString('Error message');                    // 'Error message'
-errorToString(new Error('Something went wrong'));  // 'Error: Something went wrong\\n    at...'
+errorToString(new Error('Something went wrong'));  // 'Error: Something went wrong\n    at...'
 errorToString(null);                               // 'Error was null'
 errorToString(undefined);                          // 'Error was undefined'
 ```
@@ -472,6 +486,77 @@ like('db*', 'database');      // true
 like('db', 'database');       // false
 like('database', 'database'); // true
 like('DB', 'database');       // true (case-insensitive)
+```
+
+#### `generateHumanId(): string`
+
+Generates a human-readable unique identifier using the `human-id` library with a random number suffix.
+
+```typescript
+import { generateHumanId } from '@tokenring-ai/utility/string/generateHumanId';
+
+const id = generateHumanId();
+// 'clever-hamster-427'
+```
+
+#### `intelligentTruncate(str: string, length: number, ellipsis: string = "..."): string`
+
+Truncates a string to the specified length, attempting to break at word boundaries. If the string would be truncated mid-word, it breaks at the last space before the limit.
+
+```typescript
+import intelligentTruncate from '@tokenring-ai/utility/string/intelligentTruncate';
+
+intelligentTruncate('This is a long sentence that needs truncating', 20);
+// 'This is a long...'
+
+intelligentTruncate('Short', 10);
+// 'Short'
+```
+
+#### `oneOf(str: string, ...args: string[]): boolean`
+
+Checks if a string is one of the provided options.
+
+```typescript
+import oneOf from '@tokenring-ai/utility/string/oneOf';
+
+oneOf('red', 'red', 'green', 'blue');  // true
+oneOf('yellow', 'red', 'green', 'blue'); // false
+```
+
+#### `getRandomItem(items: string[], seed: number = Math.random() * 1000): string`
+
+Returns a random item from an array. Optionally accepts a seed for reproducibility.
+
+```typescript
+import getRandomItem from '@tokenring-ai/utility/string/getRandomItem';
+
+const colors = ['red', 'green', 'blue'];
+const randomColor = getRandomItem(colors);
+// 'green' (or any other color)
+
+// With seed for reproducibility
+const sameColor = getRandomItem(colors, 42);
+```
+
+#### `workingMessages: string[]`
+
+An array of working/status messages for use in loading indicators.
+
+```typescript
+import workingMessages from '@tokenring-ai/utility/string/workingMessages';
+
+// ['Processing...', 'Planning...', 'Investigating...', 'Working...', 'Thinking...']
+```
+
+#### `ridiculousMessages: string[]`
+
+An array of humorous/fun messages for use in loading indicators.
+
+```typescript
+import ridiculousMessages from '@tokenring-ai/utility/string/ridiculousMessages';
+
+// ['Reticulating splines', 'Charging flux capacitor', 'Herding cats', ...]
 ```
 
 ### HTTP Utilities
@@ -531,6 +616,40 @@ const response = await doFetchWithRetry('https://api.example.com/data', {
 - Backoff multiplier: 2
 - Retries on: 429 (rate limit), 500-599 (server errors)
 - Immediate return on: 200-299, 300-399, 400-499 (other errors)
+
+#### `cachedDataRetriever<T>(baseURL: string, options: RetrieverOptions): () => Promise<T | null>`
+
+Creates a function that fetches and caches data from a URL. It prevents concurrent duplicate requests and respects a cache TTL.
+
+**RetrieverOptions interface:**
+
+```typescript
+interface RetrieverOptions {
+  headers: Record<string, string>;
+  cacheTime?: number;  // Defaults to 30000
+  timeout?: number;    // Defaults to 1000
+}
+```
+
+```typescript
+import cachedDataRetriever from '@tokenring-ai/utility/http/cachedDataRetriever';
+
+const getWeatherData = cachedDataRetriever('https://api.example.com/weather', {
+  headers: { 'Authorization': 'Bearer token' },
+  cacheTime: 60000,  // Cache for 1 minute
+  timeout: 5000      // 5 second timeout
+});
+
+// Returns cached data or fetches fresh if cache expired
+const data = await getWeatherData();
+```
+
+**Features:**
+- Prevents concurrent duplicate requests
+- Respects cache TTL (cacheTime)
+- Request timeout support
+- Returns null on fetch failure
+- Caches the last successful response
 
 ### Promise Utilities
 
@@ -748,6 +867,55 @@ debouncedSearch('react components'); // Cancels previous call
 - Uses a single timeout that is reset on each call
 - Prevents multiple executions within the delay period
 
+### Environment Utilities
+
+#### `defaultEnv(names: string | string[], defaultValue: string): string`
+
+Retrieves environment variables with support for `_FILE` suffix for loading secrets from files. Caches results for performance.
+
+**Features:**
+- Checks environment variable first
+- If `<VAR>_FILE` is set, reads the file content instead
+- Caches results for subsequent calls
+- Returns default value if not found
+
+```typescript
+import { defaultEnv } from '@tokenring-ai/utility/env/defaultEnv';
+
+// Simple environment variable
+const port = defaultEnv('PORT', '3000');
+
+// Multiple variable names (returns first found)
+const apiKey = defaultEnv(['API_KEY', 'SECRET_KEY'], '');
+
+// With _FILE support (if API_KEY_FILE is set, reads that file)
+const dbPassword = defaultEnv('DB_PASSWORD', '');
+```
+
+#### `isProductionEnvironment(): boolean`
+
+Checks if the current environment is production (NODE_ENV !== 'development').
+
+```typescript
+import { isProductionEnvironment } from '@tokenring-ai/utility/env/isProductionEnvironment';
+
+if (isProductionEnvironment()) {
+  // Production-specific logic
+}
+```
+
+#### `isDevelopmentEnvironment(): boolean`
+
+Checks if the current environment is development (NODE_ENV === 'development').
+
+```typescript
+import { isDevelopmentEnvironment } from '@tokenring-ai/utility/env/isDevelopmentEnvironment';
+
+if (isDevelopmentEnvironment()) {
+  // Development-specific logic
+}
+```
+
 ### Type Definitions
 
 #### `PrimitiveType`
@@ -850,7 +1018,10 @@ import {
   indent,
   codeBlock,
   errorToString,
-  markdownTable
+  markdownTable,
+  intelligentTruncate,
+  oneOf,
+  getRandomItem
 } from '@tokenring-ai/utility/string';
 
 // Boolean conversion
@@ -864,9 +1035,9 @@ trimMiddle('FullDocumentWithLotsOfText', 10, 10);
 // 'FullDocumen...omitted...xt'
 
 // Shell escaping
-const filename = \"my file's name.txt\";
+const filename = "my file's name.txt";
 const command = `rm ${shellEscape(filename)}`;
-// \"rm 'my file's'\\\"\\\"\\\"'s name.txt'\"
+// "rm 'my file's'\\\"\\\"\\\"'s name.txt'"
 
 // Join with default
 const items = null;
@@ -902,13 +1073,24 @@ const mdTable = markdownTable(
 );
 
 // Code block
-const code = codeBlock('console.log(\"hello\")', 'typescript');
+const code = codeBlock('console.log("hello")', 'typescript');
 
 // Error to string
 const errorStr = errorToString(new Error('Something went wrong'));
 
 // Indent text
-const indented = indent('line1\\nline2', 2);
+const indented = indent('line1\nline2', 2);
+
+// Intelligent truncation
+const truncated = intelligentTruncate('This is a long sentence', 15);
+// 'This is...'
+
+// One of check
+const isValid = oneOf('red', 'red', 'green', 'blue'); // true
+
+// Random item
+const colors = ['red', 'green', 'blue'];
+const random = getRandomItem(colors);
 ```
 
 ### HTTP Service Example
@@ -936,6 +1118,27 @@ class UserService extends HttpService {
 }
 
 const userService = new UserService();
+```
+
+### Cached Data Retriever Example
+
+```typescript
+import cachedDataRetriever from '@tokenring-ai/utility/http/cachedDataRetriever';
+
+// Create a cached retriever for API data
+const getApiData = cachedDataRetriever('https://api.example.com/data', {
+  headers: { 'Authorization': 'Bearer token' },
+  cacheTime: 60000,  // Cache for 1 minute
+  timeout: 5000      // 5 second timeout
+});
+
+// First call fetches data
+const data1 = await getApiData();
+
+// Second call within cache period returns cached data
+const data2 = await getApiData(); // Returns cached data
+
+// After cacheTime expires, fetches fresh data
 ```
 
 ### Registry Pattern Example
@@ -1057,13 +1260,63 @@ const isText = isBinaryData(textBuffer);
 console.log('Is text:', isText);
 ```
 
+### Environment Utilities Example
+
+```typescript
+import { defaultEnv, isProductionEnvironment, isDevelopmentEnvironment } from '@tokenring-ai/utility/env';
+
+// Get environment variable with fallback
+const port = defaultEnv('PORT', '3000');
+
+// Get secret from file (if API_KEY_FILE is set)
+const apiKey = defaultEnv('API_KEY', '');
+
+// Check environment
+if (isDevelopmentEnvironment()) {
+  console.log('Running in development mode');
+}
+
+if (isProductionEnvironment()) {
+  console.log('Running in production mode');
+}
+```
+
+### Human ID Generation Example
+
+```typescript
+import { generateHumanId } from '@tokenring-ai/utility/string/generateHumanId';
+
+// Generate unique human-readable IDs
+const userId = generateHumanId();
+// 'clever-hamster-427'
+
+const sessionId = generateHumanId();
+// 'brave-eagle-891'
+```
+
+### Working Messages Example
+
+```typescript
+import workingMessages from '@tokenring-ai/utility/string/workingMessages';
+import ridiculousMessages from '@tokenring-ai/utility/string/ridiculousMessages';
+
+// Use working messages for status updates
+const status = workingMessages[Math.floor(Math.random() * workingMessages.length)];
+console.log(status); // 'Processing...'
+
+// Use ridiculous messages for fun loading indicators
+const funStatus = ridiculousMessages[Math.floor(Math.random() * ridiculousMessages.length)];
+console.log(funStatus); // 'Reticulating splines'
+```
+
 ## Dependencies
 
 - `@tokenring-ai/agent`: 0.2.0
+- `human-id`: ^4.1.3
 
 ## Development Dependencies
 
-- `vitest`: ^4.0.18
+- `vitest`: ^4.1.0
 - `typescript`: ^5.9.3
 
 ## License
