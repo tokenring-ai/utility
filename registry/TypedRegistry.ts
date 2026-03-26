@@ -1,4 +1,4 @@
-import KeyedRegistry from "./KeyedRegistry.js";
+import KeyedRegistry from "./KeyedRegistry.ts";
 
 type ThingWithConstructor = {
   constructor: Function;

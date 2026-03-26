@@ -10,6 +10,6 @@ export default function waitForAbort<T extends any | void>(signal: AbortSignal, 
   return new Promise<T>((resolve, reject) => {
     signal.addEventListener('abort', (ev: Event) => {
       resolve(param2(ev));
-    })
-  })
+    });
+  });
 }

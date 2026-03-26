@@ -8,8 +8,9 @@ export default function pickValue<T extends object>(
   obj: T,
   key: unknown
 ) : T[keyof T] | undefined {
-  if (typeof key === "string" && Object.hasOwn(obj,key)) {
+  if (typeof key === "string" && Object.hasOwn(obj, key)) {
     return obj[key as keyof T];
   }
+  return undefined;
 }
 
