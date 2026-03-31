@@ -26,7 +26,7 @@ export abstract class HttpService {
     opts: RequestInit = {},
     context: string,
   ): Promise<any> {
-    const url = `${this.baseUrl}${path}`;
+    const url = this.baseUrl.endsWith('/') || path.startsWith('/') ? `${this.baseUrl}${path}` : `${this.baseUrl}/${path}`;
     const res = await doFetchWithRetry(url, {
       ...opts,
       headers: {...this.defaultHeaders, ...(opts.headers ?? {})},
