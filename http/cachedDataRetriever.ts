@@ -1,3 +1,5 @@
+import type {MaybePromise} from "bun";
+
 /**
  * Options for the cached data retriever.
  */
@@ -21,17 +23,13 @@ interface RetrieverOptions {
  */
 export default function cachedDataRetriever<T = unknown>(
   baseURL: string,
-  {
-    headers,
-    cacheTime = 30000,
-    timeout = 1000,
-  }: RetrieverOptions,
-): () => Promise<T | null> {
+  {headers, cacheTime = 30000, timeout = 1000}: RetrieverOptions,
+): () => MaybePromise<T | null> {
   let lastOnlineCheck = 0;
   let lastResponse: T | null = null;
   let pendingRequest: Promise<T | null> | null = null;
 
-  return async (): Promise<T | null> => {
+  return (): MaybePromise<T | null> => {
     const now = Date.now();
 
     if (lastOnlineCheck < now - cacheTime) {
@@ -55,7 +53,7 @@ export default function cachedDataRetriever<T = unknown>(
             throw new Error(`HTTP error! status: ${response.status}`);
           }
 
-          lastResponse = await response.json() as T;
+          lastResponse = (await response.json()) as T;
           lastOnlineCheck = Date.now();
           return lastResponse;
         } catch (_err) {

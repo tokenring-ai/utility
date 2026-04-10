@@ -1,7 +1,12 @@
 export default function deepEquals(a: unknown, b: unknown): boolean {
   if (a === b) return true;
 
-  if (a === null || b === null || typeof a !== "object" || typeof b !== "object") {
+  if (
+    a === null ||
+    b === null ||
+    typeof a !== "object" ||
+    typeof b !== "object"
+  ) {
     return false;
   }
 

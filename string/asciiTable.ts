@@ -26,18 +26,21 @@ interface TableOptions {
 /**
  * Generates an ASCII table with wrapping and spacing.
  */
-export function createAsciiTable(data: string[][], options: TableOptions): string {
-  const { columnWidths, padding = 0, grid = false } = options;
-  const pad = ' '.repeat(padding);
+export function createAsciiTable(
+  data: string[][],
+  options: TableOptions,
+): string {
+  const {columnWidths, padding = 0, grid = false} = options;
+  const pad = " ".repeat(padding);
 
   // Helper to create a horizontal separator line
   const separator = grid
-    ? '+' +
-    columnWidths.map( (w) => '-'.repeat(w + padding * 2)).join('+') +
-    '+\n'
-    : '';
+    ? "+" +
+    columnWidths.map((w) => "-".repeat(w + padding * 2)).join("+") +
+    "+\n"
+    : "";
 
-  const verticalSeparator = grid ? '|' : '';
+  const verticalSeparator = grid ? "|" : "";
   let table = separator;
 
   data.forEach((row) => {
@@ -45,22 +48,24 @@ export function createAsciiTable(data: string[][], options: TableOptions): strin
     const wrappedCells = row.map((cell, i) => wrapText(cell, columnWidths[i]));
 
     // Determine the height of the row (max lines in any cell)
-    const rowHeight = Math.max(...wrappedCells.map(cellLines => cellLines.length));
+    const rowHeight = Math.max(
+      ...wrappedCells.map((cellLines) => cellLines.length),
+    );
 
     // Render the row line by line (for multi-line wrapped cells)
     for (let lineIdx = 0; lineIdx < rowHeight; lineIdx++) {
       let line = verticalSeparator;
       wrappedCells.forEach((cellLines, colIdx) => {
-        const content = (cellLines[lineIdx] || '').trim();
+        const content = (cellLines[lineIdx] || "").trim();
         const width = columnWidths[colIdx];
 
         // Calculate filler based on the defined column width
-        const filler = ' '.repeat(Math.max(0, width - content.length));
+        const filler = " ".repeat(Math.max(0, width - content.length));
 
         // Standardize padding for all cells to match the separator logic
         line += `${pad}${content}${filler}${pad}${verticalSeparator}`;
       });
-      table += line + '\n';
+      table += line + "\n";
     }
     table += separator;
   });

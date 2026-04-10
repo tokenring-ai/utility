@@ -1,3 +1,5 @@
+import type {MaybePromise} from "bun";
+
 export interface BackoffOptions {
   times: number;
   interval: number;
@@ -9,14 +11,14 @@ export interface BackoffOptions {
  */
 export async function backoff<T>(
   options: BackoffOptions,
-  fn: ({ attempt }: { attempt: number }) => Promise<T | null | undefined>
+  fn: ({attempt}: { attempt: number }) => MaybePromise<T | null | undefined>,
 ): Promise<T> {
-  let { times, interval } = options;
-  const { multiplier } = options;
+  let {times, interval} = options;
+  const {multiplier} = options;
 
   for (let attempt = 1; attempt <= times; attempt++) {
     try {
-      const result = await fn({ attempt });
+      const result = await fn({attempt});
 
       // If the result is truthy (e.g., we found a client), return it
       if (result) {

@@ -8,7 +8,7 @@
  */
 export default function interpolateString(
   str: string,
-  replacements: Record<string, () => string>
+  replacements: Record<string, () => string>,
 ): string {
   // Regex matches {{ KEY }}, allowing for optional whitespace around the key.
   // Group 1 captures the key itself.

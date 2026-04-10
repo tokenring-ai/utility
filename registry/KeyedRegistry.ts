@@ -11,7 +11,9 @@ export default class KeyedRegistry<T = any> {
     // Notify any waiting subscribers
     const itemSubscribers = this.subscribers.get(name);
     if (itemSubscribers) {
-      itemSubscribers.forEach((callback) => callback(resource));
+      for (const callback of itemSubscribers) {
+        callback(resource);
+      }
       this.subscribers.delete(name);
     }
   };
@@ -20,7 +22,7 @@ export default class KeyedRegistry<T = any> {
     this.items.delete(name);
   };
 
-  waitForItemByName = (name: string, callback: (item: T) => void) : void => {
+  waitForItemByName = (name: string, callback: (item: T) => void): void => {
     // If item already exists, return it immediately
     const item = this.items.get(name);
     if (item) {
@@ -48,10 +50,12 @@ export default class KeyedRegistry<T = any> {
   ensureItems = (names: string[]) => {
     for (const name of names) {
       if (!this.items.has(name)) {
-        throw new Error(`Item ${name} not found in ${this.getAllItemNames().join(",")}`);
+        throw new Error(
+          `Item ${name} not found in ${this.getAllItemNames().join(",")}`,
+        );
       }
     }
-  }
+  };
 
   getAllItemNames = (): string[] => {
     return Array.from(this.items.keys());
@@ -63,17 +67,17 @@ export default class KeyedRegistry<T = any> {
     return Array.from(this.items.values());
   };
 
-  getItemNamesLike = (likeName: string | string[]) : string[] => {
+  getItemNamesLike = (likeName: string | string[]): string[] => {
     if (Array.isArray(likeName)) {
-      return dedupe(likeName.flatMap(name => this.getItemNamesLike(name)));
+      return dedupe(likeName.flatMap((name) => this.getItemNamesLike(name)));
     }
     const itemNames = this.getAllItemNames();
-    return itemNames.filter(itemName => like(likeName, itemName));
-  }
+    return itemNames.filter((itemName) => like(likeName, itemName));
+  };
 
-  ensureItemNamesLike = (likeName: string | string[]) : string[] => {
+  ensureItemNamesLike = (likeName: string | string[]): string[] => {
     if (Array.isArray(likeName)) {
-      return dedupe(likeName.flatMap(name => this.ensureItemNamesLike(name)));
+      return dedupe(likeName.flatMap((name) => this.ensureItemNamesLike(name)));
     }
     const matchingItems = this.getItemNamesLike(likeName);
     if (matchingItems.length === 0) {
@@ -82,21 +86,26 @@ export default class KeyedRegistry<T = any> {
       );
     }
     return matchingItems;
-  }
+  };
 
-  getItemEntriesLike = (likeName: string | string[]) : [string, T][] => {
-    return this.getItemNamesLike(likeName).map(itemName => [itemName, this.items.get(itemName)!]);
-  }
+  getItemEntriesLike = (likeName: string | string[]): [string, T][] => {
+    return this.getItemNamesLike(likeName).map((itemName) => [
+      itemName,
+      this.items.get(itemName)!,
+    ]);
+  };
 
   forEach = (callback: (key: string, item: T) => void) => {
     this.items.forEach((item, key) => {
       callback(key, item);
     });
-  }
+  };
 
   entries = () => Array.from(this.items.entries());
 
-  getLongestPrefixMatch = (input: string): { key: string; item: T; remainder: string } | undefined => {
+  getLongestPrefixMatch = (
+    input: string,
+  ): { key: string; item: T; remainder: string } | undefined => {
     let longestMatch: { key: string; item: T; remainder: string } | undefined;
 
     for (const [key, item] of this.items) {
@@ -105,7 +114,7 @@ export default class KeyedRegistry<T = any> {
           longestMatch = {
             key,
             item,
-            remainder: input.slice(key.length).trim()
+            remainder: input.slice(key.length).trim(),
           };
         }
       }
@@ -116,11 +125,13 @@ export default class KeyedRegistry<T = any> {
 
   registerAll = (items: Record<string, T> | Map<string, T>) => {
     if (items instanceof Map) {
-      items.forEach((value, key) => this.register(key, value));
+      items.forEach((value, key) => {
+        this.register(key, value);
+      });
     } else {
       for (const name in items) {
         this.register(name, items[name]);
       }
     }
-  }
+  };
 }

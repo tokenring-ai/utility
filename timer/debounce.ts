@@ -8,7 +8,7 @@
  */
 export default function debounce<T extends (...args: any[]) => any>(
   func: T,
-  delay: number
+  delay: number,
 ): (...args: Parameters<T>) => void {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
@@ -25,4 +25,3 @@ export default function debounce<T extends (...args: any[]) => any>(
     }, delay);
   };
 }
-

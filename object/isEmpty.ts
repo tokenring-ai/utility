@@ -7,7 +7,7 @@
  * @return {boolean} Returns true if the object is empty, otherwise false.
  */
 export default function isEmpty(
-  obj: Object | Array<any> | Map<any, any> | Set<any> | null | undefined
+  obj: object | Array<any> | Map<any, any> | Set<any> | null | undefined,
 ): boolean {
   if (obj === null || obj === undefined) return true;
 
@@ -17,7 +17,7 @@ export default function isEmpty(
   if (obj instanceof Map) return obj.size === 0;
   if (obj instanceof Set) return obj.size === 0;
 
-  if (typeof obj === 'object' && Object.keys(obj).length === 0) return true;
+  if (typeof obj === "object" && Object.keys(obj).length === 0) return true;
 
   return false;
 }

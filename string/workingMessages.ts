@@ -3,5 +3,5 @@ export default [
   "Planning...",
   "Investigating...",
   "Working...",
-  "Thinking..."
+  "Thinking...",
 ];

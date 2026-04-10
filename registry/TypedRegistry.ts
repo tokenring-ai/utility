@@ -23,7 +23,11 @@ export default class TypedRegistry<MinimumType extends ThingWithConstructor> {
   waitForItemByType = <R extends MinimumType>(
     type: abstract new (...args: any[]) => R,
     callback: (item: R) => void,
-  ): void => this.registry.waitForItemByName(type.name, callback as (item: MinimumType) => void);
+  ): void =>
+    this.registry.waitForItemByName(
+      type.name,
+      callback as (item: MinimumType) => void,
+    );
 
   getItemByType = <R extends MinimumType>(
     type: abstract new (...args: any[]) => R,

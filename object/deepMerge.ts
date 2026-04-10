@@ -1,7 +1,10 @@
 // ... existing code ...
 import {isPlainObject} from "./isPlainObject.ts";
 
-export type IntersectSources<T extends any[]> = T extends [infer Head, ...infer Tail]
+export type IntersectSources<T extends any[]> = T extends [
+    infer Head,
+    ...infer Tail,
+  ]
   ? NonNullable<Head> & IntersectSources<Tail>
   : unknown;
 
@@ -12,12 +15,11 @@ export type IntersectSources<T extends any[]> = T extends [infer Head, ...infer 
  * @param sources - The source objects to merge from
  * @returns A new object with deeply merged properties
  */
-export default function deepMerge<T extends object, S extends (object | null | undefined)[]>(
-  target: T | null | undefined,
-  ...sources: S
-): T & IntersectSources<S> {
-
-  const result = { ...target } as any;
+export default function deepMerge<
+  T extends object,
+  S extends (object | null | undefined)[],
+>(target: T | null | undefined, ...sources: S): T & IntersectSources<S> {
+  const result = {...target} as any;
 
   for (const source of sources) {
     if (source) {

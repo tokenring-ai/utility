@@ -18,7 +18,10 @@ interface TruncateOptions {
  * @param options - The configuration object for truncation.
  * @returns The truncated string with the suffix appended if necessary.
  */
-export default function intelligentTruncate(s: string, { maxLength, suffix = "...", maxLines}: TruncateOptions): string {
+export default function intelligentTruncate(
+  s: string,
+  {maxLength, suffix = "...", maxLines}: TruncateOptions,
+): string {
   let result = s.trim();
 
   // Handle maxLines if specified

@@ -1,10 +1,15 @@
+type ParametricObjectRequirements = Record<
+  string,
+  number | string | null | undefined
+>;
 
-type ParametricObjectRequirements = Record<string, number | string | null | undefined>;
-
-export default function parametricObjectFilter(requirements: ParametricObjectRequirements) {
-  return (obj: Record<string,unknown>) => {
+export default function parametricObjectFilter(
+  requirements: ParametricObjectRequirements,
+) {
+  return (obj: Record<string, unknown>) => {
     for (const [key, condition] of Object.entries(requirements)) {
-      const [, operator, value] = String(condition).match(/^([<>]?[=<>]?)([^=<>].*)$/) ?? [];
+      const [, operator, value] =
+      String(condition).match(/^([<>]?[=<>]?)([^=<>].*)$/) ?? [];
 
       const field = obj[key];
       if (typeof field === "number") {
