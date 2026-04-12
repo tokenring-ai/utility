@@ -5,6 +5,7 @@
 A comprehensive collection of general-purpose utility functions and classes used across the Token Ring ecosystem. This package provides reusable helpers for common programming tasks including object manipulation, string processing, HTTP operations, promise handling, registry management, timer utilities, environment management, JSON parsing, number utilities, and text wrapping.
 
 **Key Features:**
+
 - Type-safe utility functions with full TypeScript support
 - General-purpose helpers for common development tasks
 - No external dependencies beyond `human-id` for ID generation
@@ -57,10 +58,12 @@ The package is organized into logical modules:
 Detects if a buffer contains binary data by checking for null bytes and other non-text characters in the first 8KB of the file.
 
 **Detection Criteria:**
+
 - Null bytes present (strong indicator of binary data)
 - More than 30% non-printable ASCII bytes in the first 8KB
 
 **Parameters:**
+
 - `buffer`: The Buffer to analyze
 
 **Returns:** `true` if binary data detected, `false` otherwise
@@ -82,12 +85,14 @@ const isBinaryResult = isBinaryData(binaryBuffer); // true
 Retrieves environment variables with support for `_FILE` suffix for loading secrets from files. Results are cached for performance.
 
 **Features:**
+
 - Checks environment variable first
 - If `<VAR>_FILE` is set, reads the file content instead
 - Caches results for subsequent calls
 - Returns default value if not found
 
 **Parameters:**
+
 - `names`: Single variable name or array of names (returns first found)
 - `defaultValue`: Value to return if variable not found
 
@@ -135,6 +140,7 @@ if (isDevelopmentEnvironment()) {
 Base class for HTTP services with automatic JSON parsing and error handling. Extend this class to create typed HTTP clients.
 
 **Abstract Properties:**
+
 - `baseUrl`: string - The base URL for all requests
 - `defaultHeaders`: Record<string, string> - Default headers for all requests
 
@@ -172,6 +178,7 @@ export class UserService extends HttpService {
 Fetch with automatic retry logic for network errors and rate limiting. Retries up to 3 times with exponential backoff for 429 (rate limit) and 5xx server errors.
 
 **Retry Configuration:**
+
 - Max retries: 3
 - Initial delay: 500ms (with random jitter up to 250ms)
 - Backoff multiplier: 2
@@ -214,6 +221,7 @@ const data = await getWeatherData();
 ```
 
 **Features:**
+
 - Prevents concurrent duplicate requests
 - Respects cache TTL (cacheTime)
 - Request timeout support
@@ -227,6 +235,7 @@ const data = await getWeatherData();
 Safely parses a JSON string, returning a default value if parsing fails.
 
 **Parameters:**
+
 - `jsonString`: The JSON string to parse
 - `defaultValue`: Value to return if parsing fails
 
@@ -376,6 +385,7 @@ type ParametricObjectRequirements = Record<string, number | string | null | unde
 ```
 
 **Supported Operators:**
+
 - Numeric: `>`, `<`, `>=`, `<=`, `=`, `` (no operator)
 - String: `` (no operator) or `=` only for 'name' field
 
@@ -417,6 +427,7 @@ const invalidKey = pickValue(user, 'invalid');
 Validates that an object contains all required fields. Throws an error if any required field is missing, null, undefined, or empty string.
 
 **Parameters:**
+
 - `obj`: The object to validate
 - `required`: Array of required field names
 - `context`: Optional context string for error messages (default: "Config")
@@ -519,6 +530,7 @@ A generic registry for storing and retrieving items by string keys. Includes sup
 
 **Pattern matching with `getItemNamesLike`:**
 The `likeName` parameter supports:
+
 - Prefix matching: `'db*'` matches `'database'`, `'dbconnection'`, etc.
 - Exact matching: `'db'` matches `'db'` exactly
 - Case-insensitive matching
@@ -637,6 +649,7 @@ trimMiddle('hello', 2, 2);
 Safely escapes a string for use in shell commands.
 
 **Behavior:**
+
 - Returns `''` if arg is falsy
 - Returns arg as-is if it matches `^[a-zA-Z0-9_\-./:]+$` (no special characters)
 - Otherwise wraps in single quotes and escapes any single quotes within
@@ -991,6 +1004,7 @@ setInterval(() => {
 Creates a throttled function that only invokes the provided function if at least `minWait` milliseconds have elapsed since the last invocation. The `minWait` parameter is passed when calling the throttled function, not during creation. If multiple calls are made within the throttle period, only the last call will be executed at the end of the period.
 
 **Technical details:**
+
 - Uses a timestamp-based throttling mechanism
 - Clears any pending timeout if a new call comes in within the period
 - Executes immediately if enough time has passed since the last call
@@ -1016,6 +1030,7 @@ throttledLog(0, 'Immediate'); // Executes immediately
 Creates a debounced function that delays invoking the provided function until after `delay` milliseconds have elapsed since the last time the debounced function was invoked. If multiple calls are made within the debounce period, the function will only execute once at the end of the period.
 
 **Technical details:**
+
 - Clears any pending timeout if a new function call comes in
 - Uses a single timeout that is reset on each call
 - Prevents multiple executions within the delay period
@@ -1612,6 +1627,7 @@ MIT License - see [LICENSE](./LICENSE) file for details.
 #### `isBinaryData(buffer: Buffer): boolean`
 
 Detects if a buffer contains binary data by checking for null bytes and other non-text characters in the first 8KB of the file. Binary data is detected if:
+
 - The buffer contains null bytes (strong indicator)
 - More than 30% of bytes in the first 8KB are non-printable ASCII characters
 
@@ -1632,6 +1648,7 @@ const isBinaryResult = isBinaryData(binaryBuffer); // true
 Retrieves environment variables with support for `_FILE` suffix for loading secrets from files. Caches results for performance.
 
 **Features:**
+
 - Checks environment variable first
 - If `<VAR>_FILE` is set, reads the file content instead
 - Caches results for subsequent calls
@@ -1681,6 +1698,7 @@ if (isDevelopmentEnvironment()) {
 Base class for HTTP services with automatic JSON parsing and error handling. Extend this class to create typed HTTP clients.
 
 **Abstract Properties:**
+
 - `baseUrl`: string - The base URL for all requests
 - `defaultHeaders`: Record<string, string> - Default headers for all requests
 
@@ -1726,6 +1744,7 @@ const response = await doFetchWithRetry('https://api.example.com/data', {
 ```
 
 **Retry logic:**
+
 - Max retries: 3
 - Initial delay: 500ms (with random jitter up to 250ms)
 - Backoff multiplier: 2
@@ -1760,6 +1779,7 @@ const data = await getWeatherData();
 ```
 
 **Features:**
+
 - Prevents concurrent duplicate requests
 - Respects cache TTL (cacheTime)
 - Request timeout support
@@ -1936,6 +1956,7 @@ const filtered = users.filter(filter);
 ```
 
 **Supported Operators:**
+
 - Numeric: `>`, `<`, `>=`, `<=`, `=`, `` (no operator)
 - String: `` (no operator) or `=` only for 'name' field
 
@@ -1973,6 +1994,7 @@ requireFields(config, ['port', 'host', 'username', 'password'], 'Config');
 ```
 
 **Parameters:**
+
 - `obj`: The object to validate
 - `required`: Array of required field names
 - `context`: Optional context string for error messages (default: "Config")
@@ -2061,6 +2083,7 @@ A generic registry for storing and retrieving items by string keys. Includes sup
 
 **Pattern matching with `getItemNamesLike`:**
 The `likeName` parameter supports:
+
 - Prefix matching: `'db*'` matches `'database'`, `'dbconnection'`, etc.
 - Exact matching: `'db'` matches `'db'` exactly
 - Case-insensitive matching
@@ -2187,6 +2210,7 @@ const command = `cat ${shellEscape(filename)}`;
 ```
 
 **Behavior:**
+
 - Returns `''` if arg is falsy
 - Returns arg as-is if it matches `^[a-zA-Z0-9_\-./:]+$` (no special characters)
 - Otherwise wraps in single quotes and escapes any single quotes within
@@ -2548,6 +2572,7 @@ throttledLog(0, 'Immediate'); // Executes immediately
 ```
 
 **Technical details:**
+
 - Uses a timestamp-based throttling mechanism
 - Clears any pending timeout if a new call comes in within the period
 - Executes immediately if enough time has passed since the last call
@@ -2573,6 +2598,7 @@ debouncedSearch('react components'); // Cancels previous call
 ```
 
 **Technical details:**
+
 - Clears any pending timeout if a new function call comes in
 - Uses a single timeout that is reset on each call
 - Prevents multiple executions within the delay period
