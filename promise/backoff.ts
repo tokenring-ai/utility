@@ -24,7 +24,7 @@ export async function backoff<T>(
       if (result) {
         return result;
       }
-    } catch (error) {
+    } catch (error: unknown) {
       if (attempt === times) throw error;
     }
 

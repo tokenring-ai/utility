@@ -23,7 +23,7 @@ export abstract class HttpService {
 
   protected async fetchJson(
     path: string,
-    opts: RequestInit = {},
+    opts: Omit<RequestInit,"headers"> & { headers?: Record<string, string> } = {},
     context: string,
   ): Promise<any> {
     const url =

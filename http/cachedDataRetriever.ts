@@ -56,7 +56,7 @@ export default function cachedDataRetriever<T = unknown>(
           lastResponse = (await response.json()) as T;
           lastOnlineCheck = Date.now();
           return lastResponse;
-        } catch (_err) {
+        } catch {
           lastResponse = null;
           return lastResponse;
         } finally {
