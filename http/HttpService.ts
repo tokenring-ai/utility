@@ -32,7 +32,7 @@ export abstract class HttpService {
         : `${this.baseUrl}/${path}`;
     const res = await doFetchWithRetry(url, {
       ...opts,
-      headers: {...this.defaultHeaders, ...(opts.headers ?? {})},
+      headers: {...this.defaultHeaders, ...opts.headers},
     });
     return this.parseJsonOrThrow(res, context);
   }

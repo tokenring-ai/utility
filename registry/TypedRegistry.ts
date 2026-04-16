@@ -6,11 +6,11 @@ type ThingWithConstructor = {
 
 export default class TypedRegistry<MinimumType extends ThingWithConstructor> {
   protected registry = new KeyedRegistry<MinimumType>();
-  getItems = this.registry.getAllItemValues;
+  getItems = this.registry.valuesArray;
 
   register = (...items: MinimumType[] | MinimumType[][]) => {
     for (const item of items.flat() as MinimumType[]) {
-      this.registry.register(item.constructor.name, item);
+      this.registry.set(item.constructor.name, item);
     }
   };
 
@@ -24,7 +24,7 @@ export default class TypedRegistry<MinimumType extends ThingWithConstructor> {
     type: abstract new (...args: any[]) => R,
     callback: (item: R) => void,
   ): void =>
-    this.registry.waitForItemByName(
+    this.registry.waitFor(
       type.name,
       callback as (item: MinimumType) => void,
     );
@@ -32,12 +32,12 @@ export default class TypedRegistry<MinimumType extends ThingWithConstructor> {
   getItemByType = <R extends MinimumType>(
     type: abstract new (...args: any[]) => R,
   ): R | undefined => {
-    return this.registry.getItemByName(type.name) as R | undefined;
+    return this.registry.get(type.name) as R | undefined;
   };
 
   requireItemByType = <R extends MinimumType>(
     type: abstract new (...args: any[]) => R,
   ): R => {
-    return this.registry.requireItemByName(type.name) as R;
+    return this.registry.require(type.name) as R;
   };
 }

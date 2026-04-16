@@ -23,10 +23,7 @@ export default function markdownTable(
   // 3. Create the data rows
   const dataRows = rows.map((row) => {
     // Ensure the row has the same number of cells as columns
-    const padding = new Array(Math.max(0, columns.length - row.length)).fill(
-      "",
-    );
-    const sanitizedRow = row.concat(padding).slice(0, columns.length);
+    const sanitizedRow = columns.map((_, i) => row[i] ?? "");
     return createRow(sanitizedRow);
   });
 
