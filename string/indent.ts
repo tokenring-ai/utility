@@ -1,8 +1,10 @@
+import {splitArrayable} from "../array/arrayable.ts";
+
 export default function indent(
   input: string | string[],
   level: number,
 ): string {
-  const lines = Array.isArray(input) ? input : input.split("\n");
+  const lines = splitArrayable(input, "\n")
   const indentString = " ".repeat(level);
 
   return lines
