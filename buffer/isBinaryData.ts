@@ -17,8 +17,7 @@ export function isBinaryData(buffer: Buffer): boolean {
   for (let i = 0; i < sampleSize; i++) {
     const byte = sample[i];
     // ASCII printable range: 32-126, plus tab (9), newline (10), carriage return (13)
-    const isPrintable =
-      (byte >= 32 && byte <= 126) || byte === 9 || byte === 10 || byte === 13;
+    const isPrintable = (byte >= 32 && byte <= 126) || byte === 9 || byte === 10 || byte === 13;
     if (!isPrintable) {
       nonPrintableCount++;
     }

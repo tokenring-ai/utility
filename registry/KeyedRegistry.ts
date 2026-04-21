@@ -1,5 +1,5 @@
-import {dedupe} from "../string/dedupe.ts";
-import {like} from "../string/like.ts";
+import { dedupe } from "../string/dedupe.ts";
+import { like } from "../string/like.ts";
 
 export default class KeyedRegistry<T = any> {
   protected items: Map<string, T> = new Map();
@@ -50,9 +50,7 @@ export default class KeyedRegistry<T = any> {
   ensureItems = (names: string[]) => {
     for (const name of names) {
       if (!this.items.has(name)) {
-        throw new Error(
-          `Item ${name} not found in ${this.keysArray().join(",")}`,
-        );
+        throw new Error(`Item ${name} not found in ${this.keysArray().join(",")}`);
       }
     }
   };
@@ -65,30 +63,25 @@ export default class KeyedRegistry<T = any> {
 
   keysLike = (likeName: string | string[]): string[] => {
     if (Array.isArray(likeName)) {
-      return dedupe(likeName.flatMap((name) => this.keysLike(name)));
+      return dedupe(likeName.flatMap(name => this.keysLike(name)));
     }
     const itemNames = this.keysArray();
-    return itemNames.filter((itemName) => like(likeName, itemName));
+    return itemNames.filter(itemName => like(likeName, itemName));
   };
 
   requireKeysLike = (likeName: string | string[]): string[] => {
     if (Array.isArray(likeName)) {
-      return dedupe(likeName.flatMap((name) => this.requireKeysLike(name)));
+      return dedupe(likeName.flatMap(name => this.requireKeysLike(name)));
     }
     const matchingItems = this.keysLike(likeName);
     if (matchingItems.length === 0) {
-      throw new Error(
-        `Couldn't enable ${likeName}: no items found matching prefix`,
-      );
+      throw new Error(`Couldn't enable ${likeName}: no items found matching prefix`);
     }
     return matchingItems;
   };
 
   entriesLike = (likeName: string | string[]): [string, T][] => {
-    return this.keysLike(likeName).map((itemName) => [
-      itemName,
-      this.items.get(itemName)!,
-    ]);
+    return this.keysLike(likeName).map(itemName => [itemName, this.items.get(itemName)!]);
   };
 
   forEach = (callback: (key: string, item: T) => void) => {
@@ -100,9 +93,7 @@ export default class KeyedRegistry<T = any> {
   entries = () => this.items.entries();
   entriesArray = () => Array.from(this.items.entries());
 
-  getLongestPrefixMatch = (
-    input: string,
-  ): { key: string; item: T; remainder: string } | undefined => {
+  getLongestPrefixMatch = (input: string): { key: string; item: T; remainder: string } | undefined => {
     let longestMatch: { key: string; item: T; remainder: string } | undefined;
 
     for (const [key, item] of this.items) {

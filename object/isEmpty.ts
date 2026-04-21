@@ -6,9 +6,7 @@
  * @param obj - The object to be checked for emptiness.
  * @return {boolean} Returns true if the object is empty, otherwise false.
  */
-export default function isEmpty(
-  obj: object | Array<any> | Map<any, any> | Set<any> | null | undefined,
-): boolean {
+export default function isEmpty(obj: object | Array<any> | Map<any, any> | Set<any> | null | undefined): boolean {
   if (obj === null || obj === undefined) return true;
 
   if (Array.isArray(obj)) return obj.length === 0;

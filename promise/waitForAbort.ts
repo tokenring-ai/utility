@@ -1,4 +1,4 @@
-import type {MaybePromise} from "bun";
+import type { MaybePromise } from "bun";
 
 /**
  * Waits for an abort signal and resolves a promise with the result of the provided callback function.
@@ -8,10 +8,7 @@ import type {MaybePromise} from "bun";
  * @return {Promise<T>} A promise that resolves with the result of the callback function when the abort event is triggered.
  * @template T
  */
-export default function waitForAbort<T extends unknown>(
-  signal: AbortSignal,
-  param2: (ev: Event) => MaybePromise<T>,
-): Promise<T> {
+export default function waitForAbort<T>(signal: AbortSignal, param2: (ev: Event) => MaybePromise<T>): Promise<T> {
   return new Promise<T>((resolve, _reject) => {
     signal.addEventListener("abort", (ev: Event) => {
       resolve(param2(ev));

@@ -1,12 +1,9 @@
 import fs from "node:fs";
-import {arrayableToArray} from "../array/arrayable.ts";
+import { arrayableToArray } from "../array/arrayable.ts";
 
 const envCache = new Map<string, string>();
 
-export function defaultEnv(
-  names: string | string[],
-  defaultValue: string,
-): string {
+export function defaultEnv(names: string | string[], defaultValue: string): string {
   for (const name of arrayableToArray(names)) {
     if (envCache.has(name)) {
       return envCache.get(name)!;

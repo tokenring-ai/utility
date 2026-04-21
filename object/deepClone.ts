@@ -1,4 +1,4 @@
-import {isPlainObject} from "./isPlainObject.ts";
+import { isPlainObject } from "./isPlainObject.ts";
 
 /**
  * Creates a deep copy of a value.
@@ -19,7 +19,7 @@ export default function deepClone<T>(value: T): T {
 
   // Handle Array
   if (Array.isArray(value)) {
-    return value.map((item) => deepClone(item)) as any;
+    return value.map(item => deepClone(item)) as any;
   }
 
   // Handle Plain Objects

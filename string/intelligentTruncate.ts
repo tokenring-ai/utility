@@ -5,9 +5,9 @@ interface TruncateOptions {
   /** The maximum number of characters allowed. */
   maxLength: number;
   /** The string to append at the end of the truncated text. Defaults to "...". */
-  suffix?: string;
+  suffix?: string | undefined;
   /** The maximum number of lines to display. If the string exceeds this, it will be truncated at the last line. */
-  maxLines?: number;
+  maxLines?: number | undefined;
 }
 
 /**
@@ -18,10 +18,7 @@ interface TruncateOptions {
  * @param options - The configuration object for truncation.
  * @returns The truncated string with the suffix appended if necessary.
  */
-export default function intelligentTruncate(
-  s: string,
-  {maxLength, suffix = "...", maxLines}: TruncateOptions,
-): string {
+export default function intelligentTruncate(s: string, { maxLength, suffix = "...", maxLines }: TruncateOptions): string {
   let result = s.trim();
 
   // Handle maxLines if specified

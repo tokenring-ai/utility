@@ -6,10 +6,7 @@
  * @param replacements - A record where keys match the placeholders and values are functions returning strings.
  * @returns The interpolated string.
  */
-export default function interpolateString(
-  str: string,
-  replacements: Record<string, () => string>,
-): string {
+export default function interpolateString(str: string, replacements: Record<string, () => string>): string {
   // Regex matches {{ KEY }}, allowing for optional whitespace around the key.
   // Group 1 captures the key itself.
   return str.replace(/\{\{\s*(\w+)\s*\}\}/g, (match, key) => {

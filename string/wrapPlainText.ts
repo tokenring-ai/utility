@@ -1,4 +1,4 @@
-import {visibleLength} from "./visibleLength.ts";
+import { visibleLength } from "./visibleLength.ts";
 
 export function wrapPlainText(text: string, width: number): string[] {
   if (width <= 0) return [""];

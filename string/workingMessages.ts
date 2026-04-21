@@ -1,7 +1,1 @@
-export default [
-  "Processing...",
-  "Planning...",
-  "Investigating...",
-  "Working...",
-  "Thinking...",
-];
+export default ["Processing...", "Planning...", "Investigating...", "Working...", "Thinking..."];

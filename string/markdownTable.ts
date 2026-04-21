@@ -5,10 +5,7 @@
  * @param rows - An array of arrays, where each inner array represents a row of data.
  * @returns A formatted Markdown table string.
  */
-export default function markdownTable(
-  columns: string[],
-  rows: string[][],
-): string {
+export default function markdownTable(columns: string[], rows: string[][]): string {
   if (columns.length === 0) return "";
 
   // Helper to create a row string
@@ -21,7 +18,7 @@ export default function markdownTable(
   const separatorRow = createRow(columns.map(() => "---"));
 
   // 3. Create the data rows
-  const dataRows = rows.map((row) => {
+  const dataRows = rows.map(row => {
     // Ensure the row has the same number of cells as columns
     const sanitizedRow = columns.map((_, i) => row[i] ?? "");
     return createRow(sanitizedRow);

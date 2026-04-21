@@ -1,4 +1,4 @@
-import {doFetchWithRetry} from "./doFetchWithRetry.ts";
+import { doFetchWithRetry } from "./doFetchWithRetry.ts";
 
 export abstract class HttpService {
   protected abstract baseUrl: string;
@@ -9,8 +9,7 @@ export abstract class HttpService {
     let json: any;
     try {
       json = text ? JSON.parse(text) : undefined;
-    } catch {
-    }
+    } catch {}
 
     if (!res.ok) {
       const err: any = new Error(`${context} failed (${res.status})`);
@@ -21,18 +20,11 @@ export abstract class HttpService {
     return json ?? {};
   }
 
-  protected async fetchJson(
-    path: string,
-    opts: Omit<RequestInit,"headers"> & { headers?: Record<string, string> } = {},
-    context: string,
-  ): Promise<any> {
-    const url =
-      this.baseUrl.endsWith("/") || path.startsWith("/")
-        ? `${this.baseUrl}${path}`
-        : `${this.baseUrl}/${path}`;
+  protected async fetchJson(path: string, opts: Omit<RequestInit, "headers"> & { headers?: Record<string, string> } = {}, context: string): Promise<any> {
+    const url = this.baseUrl.endsWith("/") || path.startsWith("/") ? `${this.baseUrl}${path}` : `${this.baseUrl}/${path}`;
     const res = await doFetchWithRetry(url, {
       ...opts,
-      headers: {...this.defaultHeaders, ...opts.headers},
+      headers: { ...this.defaultHeaders, ...opts.headers },
     });
     return this.parseJsonOrThrow(res, context);
   }

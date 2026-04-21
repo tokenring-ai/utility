@@ -1,4 +1,4 @@
-import {wrapText} from "./wrapText.ts";
+import { wrapText } from "./wrapText.ts";
 
 /* --- Example Usage ---
 const headers = ["ID", "Name", "Description"];
@@ -18,39 +18,30 @@ console.log(tableOutput);
 
 interface TableOptions {
   columnWidths: number[];
-  padding?: number;
-  header?: string[];
-  grid?: boolean;
+  padding?: number | undefined;
+  header?: string[] | undefined;
+  grid?: boolean | undefined;
 }
 
 /**
  * Generates an ASCII table with wrapping and spacing.
  */
-export function createAsciiTable(
-  data: string[][],
-  options: TableOptions,
-): string {
-  const {columnWidths, padding = 0, grid = false} = options;
+export function createAsciiTable(data: string[][], options: TableOptions): string {
+  const { columnWidths, padding = 0, grid = false } = options;
   const pad = " ".repeat(padding);
 
   // Helper to create a horizontal separator line
-  const separator = grid
-    ? "+" +
-    columnWidths.map((w) => "-".repeat(w + padding * 2)).join("+") +
-    "+\n"
-    : "";
+  const separator = grid ? "+" + columnWidths.map(w => "-".repeat(w + padding * 2)).join("+") + "+\n" : "";
 
   const verticalSeparator = grid ? "|" : "";
   let table = separator;
 
-  data.forEach((row) => {
+  data.forEach(row => {
     // Wrap each cell in the row
     const wrappedCells = row.map((cell, i) => wrapText(cell, columnWidths[i]));
 
     // Determine the height of the row (max lines in any cell)
-    const rowHeight = Math.max(
-      ...wrappedCells.map((cellLines) => cellLines.length),
-    );
+    const rowHeight = Math.max(...wrappedCells.map(cellLines => cellLines.length));
 
     // Render the row line by line (for multi-line wrapped cells)
     for (let lineIdx = 0; lineIdx < rowHeight; lineIdx++) {

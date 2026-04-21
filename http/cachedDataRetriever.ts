@@ -1,4 +1,4 @@
-import type {MaybePromise} from "bun";
+import type { MaybePromise } from "bun";
 
 /**
  * Options for the cached data retriever.
@@ -7,9 +7,9 @@ interface RetrieverOptions {
   /** HTTP headers to include in the request. */
   headers: Record<string, string>;
   /** Time in milliseconds to cache the response. Defaults to 30000. */
-  cacheTime?: number;
+  cacheTime?: number | undefined;
   /** Request timeout in milliseconds. Defaults to 1000. */
-  timeout?: number;
+  timeout?: number | undefined;
 }
 
 /**
@@ -23,7 +23,7 @@ interface RetrieverOptions {
  */
 export default function cachedDataRetriever<T = unknown>(
   baseURL: string,
-  {headers, cacheTime = 30000, timeout = 1000}: RetrieverOptions,
+  { headers, cacheTime = 30000, timeout = 1000 }: RetrieverOptions,
 ): () => MaybePromise<T | null> {
   let lastOnlineCheck = 0;
   let lastResponse: T | null = null;

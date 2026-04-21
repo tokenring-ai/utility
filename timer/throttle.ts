@@ -5,9 +5,7 @@
  * @param func - The function to throttle
  * @returns A throttled version of the function that accepts a `minWait` parameter
  */
-export default function throttle<T extends (...args: any[]) => any>(
-  func: T,
-): (minWait: number, ...args: Parameters<T>) => void {
+export default function throttle<T extends (...args: any[]) => any>(func: T): (minWait: number, ...args: Parameters<T>) => void {
   let lastCallTime: number | null = null;
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
