@@ -1,4 +1,4 @@
-export async function doFetchWithRetry(url: string, init?: RequestInit): Promise<Response> {
+export async function doFetchWithRetry(url: string | URL, init?: RequestInit): Promise<Response> {
   const maxRetries = 3;
   let delay = 500;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
