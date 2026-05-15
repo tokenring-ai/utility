@@ -1,5 +1,5 @@
 export default function unknownAsError(error: unknown): Error {
-  if (error instanceof Error) {
+  if (Error.isError(error)) {
     return error;
   } else if (typeof error === "string") {
     return new Error(error);

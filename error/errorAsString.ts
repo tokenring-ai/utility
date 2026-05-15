@@ -1,5 +1,5 @@
 export default function errorAsString(error: unknown): string {
-  if (error instanceof Error) {
+  if (Error.isError(error)) {
     return error.stack ?? `${error.name}: ${error.message}`;
   } else if (typeof error === "string") {
     return error;
