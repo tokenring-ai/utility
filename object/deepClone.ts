@@ -43,7 +43,7 @@ function cloneValue<T>(value: T): T {
 
   // Handle Date (representable as an ISO string in JSON/YAML)
   if (value instanceof Date) {
-    return new Date(value.getTime()) as any;
+    return new Date(value.getTime()) as T;
   }
 
   // Handle Array

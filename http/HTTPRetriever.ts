@@ -1,4 +1,4 @@
-import type { ZodType, z } from "zod";
+import type { z, ZodType } from "zod";
 import type { JSONValue } from "../json/safeParse.ts";
 import { doFetchWithRetry } from "./doFetchWithRetry.ts";
 
@@ -16,7 +16,37 @@ export type HTTPRetrieverOpts = {
 };
 
 export class HTTPRetriever {
-  constructor(private readonly opts: HTTPRetrieverOpts) {}
+  constructor(private readonly opts: HTTPRetrieverOpts) {
+  }
+
+  async fetchText({ url, opts, context, timeout }: FetchJSONOpts): Promise<string> {
+    const abortController = new AbortController();
+    const handleParentAbort = () => abortController.abort();
+    if (opts?.signal) opts.signal.addEventListener("abort", handleParentAbort);
+
+    const timeoutId = setTimeout(() => abortController.abort("Request timed out"), timeout ?? this.opts.timeout);
+
+    const absoluteURL = new URL(url, this.opts.baseUrl);
+    try {
+      const res = await doFetchWithRetry(absoluteURL, {
+        ...opts,
+        headers: { ...this.opts.headers, ...opts?.headers },
+        signal: abortController.signal,
+      });
+
+      const text = await res.text().catch(() => "");
+      if (!res.ok) {
+        const err: any = new Error(`${context} failed (${res.status})`);
+        err.status = res.status;
+        err.details = text?.slice(0, 500);
+        throw err;
+      }
+      return text;
+    } finally {
+      clearTimeout(timeoutId);
+      if (opts?.signal) opts.signal.removeEventListener("abort", handleParentAbort);
+    }
+  }
 
   async fetchJson({ url, opts, context, timeout }: FetchJSONOpts): Promise<JSONValue> {
     const abortController = new AbortController();
@@ -51,7 +81,8 @@ export class HTTPRetriever {
     let json: JSONValue;
     try {
       json = text ? JSON.parse(text) : undefined;
-    } catch {}
+    } catch {
+    }
 
     if (!res.ok) {
       const err: any = new Error(`${context} failed (${res.status})`);

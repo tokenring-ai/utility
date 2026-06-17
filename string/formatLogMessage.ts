@@ -1,20 +1,19 @@
-import { arrayableToArray } from "../array/arrayable.ts";
 import type { Arrayable } from "../array/arrayable.ts";
+import { arrayableToArray } from "../array/arrayable.ts";
 
 /**
  * Formats log messages similar to console.log, with special handling for errors
  */
 export default function formatLogMessages(...messages: Arrayable<unknown>[]): string {
   return messages
-    .map(msg => arrayableToArray(msg)
-      .map(chunk => {
-        // Special handling for Error objects to include stack trace
-        if (Error.isError(chunk)) {
-          return chunk.stack ?? `${chunk.name}: ${chunk.message}`;
-        }
+    .flatMap(msg => arrayableToArray(msg))
+    .map(chunk => {
+      // Special handling for Error objects to include stack trace
+      if (Error.isError(chunk)) {
+        return chunk.stack ?? `${chunk.name}: ${chunk.message}`;
+      }
 
-        return String(chunk);
-      })
-    )
+      return String(chunk);
+    })
     .join(" ");
 }

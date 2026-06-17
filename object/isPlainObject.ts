@@ -7,6 +7,6 @@ export function isPlainObject(value: unknown): value is Record<string, any> {
   }
 
   // Check if it's a plain object created with {} or new Object()
-  const proto = Object.getPrototypeOf(value);
+  const proto = Object.getPrototypeOf(value) as unknown;
   return proto === Object.prototype || proto === null;
 }
