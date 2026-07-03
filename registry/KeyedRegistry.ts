@@ -117,8 +117,8 @@ export default class KeyedRegistry<T = any> {
         this.set(key, value);
       });
     } else {
-      for (const name in items) {
-        this.set(name, items[name]);
+      for (const [name, value] of Object.entries(items)) {
+        this.set(name, value);
       }
     }
   };

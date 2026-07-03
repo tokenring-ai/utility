@@ -37,8 +37,11 @@ export function createAsciiTable(data: string[][], options: TableOptions): strin
   let table = separator;
 
   data.forEach(row => {
+    if (row.length !== columnWidths.length) {
+      throw new Error("Row length must match the number of columns");
+    }
     // Wrap each cell in the row
-    const wrappedCells = row.map((cell, i) => wrapText(cell, columnWidths[i]));
+    const wrappedCells = row.map((cell, i) => wrapText(cell, columnWidths[i]!));
 
     // Determine the height of the row (max lines in any cell)
     const rowHeight = Math.max(...wrappedCells.map(cellLines => cellLines.length));
@@ -48,7 +51,7 @@ export function createAsciiTable(data: string[][], options: TableOptions): strin
       let line = verticalSeparator;
       wrappedCells.forEach((cellLines, colIdx) => {
         const content = (cellLines[lineIdx] || "").trim();
-        const width = columnWidths[colIdx];
+        const width = columnWidths[colIdx]!;
 
         // Calculate filler based on the defined column width
         const filler = " ".repeat(Math.max(0, width - content.length));

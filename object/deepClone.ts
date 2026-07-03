@@ -64,11 +64,8 @@ function cloneValue<T>(value: T): T {
 
   // Anything else (Map, Set, RegExp, class instances, typed arrays, etc.)
   // is not representable in JSON/YAML.
-  const ctorName =
-    (value as any)?.constructor?.name ?? Object.prototype.toString.call(value);
-  throw new TypeError(
-    `deepClone: values of type \`${ctorName}\` not representable in JSON/YAML`
-  );
+  const ctorName = (value as any)?.constructor?.name ?? Object.prototype.toString.call(value);
+  throw new TypeError(`deepClone: values of type \`${ctorName}\` not representable in JSON/YAML`);
 }
 
 /**
@@ -86,9 +83,7 @@ function cloneValue<T>(value: T): T {
  * @param value
  */
 export default function deepClone<T>(value: T): T;
-export default function deepClone<S extends (object | null | undefined)[]>(
-  ...sources: S
-): IntersectSources<S>;
+export default function deepClone<S extends (object | null | undefined)[]>(...sources: S): IntersectSources<S>;
 export default function deepClone(...sources: any[]): any {
   // Single-argument fast path: behave as a pure deep clone of any value.
   if (sources.length === 1) {

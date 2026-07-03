@@ -16,8 +16,7 @@ export type HTTPRetrieverOpts = {
 };
 
 export class HTTPRetriever {
-  constructor(private readonly opts: HTTPRetrieverOpts) {
-  }
+  constructor(private readonly opts: HTTPRetrieverOpts) {}
 
   async fetchText({ url, opts, context, timeout }: FetchJSONOpts): Promise<string> {
     const abortController = new AbortController();
@@ -81,8 +80,7 @@ export class HTTPRetriever {
     let json: JSONValue;
     try {
       json = text ? JSON.parse(text) : undefined;
-    } catch {
-    }
+    } catch {}
 
     if (!res.ok) {
       const err: any = new Error(`${context} failed (${res.status})`);
