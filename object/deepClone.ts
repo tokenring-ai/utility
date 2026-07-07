@@ -1,3 +1,5 @@
+// eslint-disable @typescript-eslint/no-unsafe-assignment
+
 import { isPlainObject } from "./isPlainObject.ts";
 
 export type IntersectSources<T extends any[]> = T extends [infer Head, ...infer Tail] ? NonNullable<Head> & IntersectSources<Tail> : unknown;

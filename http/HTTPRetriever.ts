@@ -1,4 +1,4 @@
-import type { z, ZodType } from "zod";
+import type { ZodType, z } from "zod";
 import type { JSONValue } from "../json/safeParse.ts";
 import { doFetchWithRetry } from "./doFetchWithRetry.ts";
 
@@ -14,6 +14,16 @@ export type HTTPRetrieverOpts = {
   headers?: Record<string, string>;
   timeout: number;
 };
+
+export class HTTPError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly details?: string,
+  ) {
+    super(message);
+  }
+}
 
 export class HTTPRetriever {
   constructor(private readonly opts: HTTPRetrieverOpts) {}
@@ -35,11 +45,9 @@ export class HTTPRetriever {
 
       const text = await res.text().catch(() => "");
       if (!res.ok) {
-        const err: any = new Error(`${context} failed (${res.status})`);
-        err.status = res.status;
-        err.details = text?.slice(0, 500);
-        throw err;
+        throw new HTTPError(`${context} failed (${res.status})`, res.status, text.slice(0, 500));
       }
+
       return text;
     } finally {
       clearTimeout(timeoutId);
@@ -62,8 +70,18 @@ export class HTTPRetriever {
       signal: abortController.signal,
     });
 
+    const text = await res.text().catch(() => "");
+
+    if (!res.ok) {
+      throw new HTTPError(`${context} failed (${res.status})`, res.status, text.slice(0, 500));
+    }
+
+    if (text.length === 0) {
+      throw new HTTPError(`${context} failed (empty response)`, 400, text.slice(0, 500));
+    }
+
     try {
-      return this.parseJsonOrThrow(res, context);
+      return JSON.parse(text);
     } finally {
       clearTimeout(timeoutId);
       if (opts?.signal) opts.signal.removeEventListener("abort", handleParentAbort);
@@ -73,21 +91,5 @@ export class HTTPRetriever {
   async fetchValidatedJson<T extends ZodType>({ schema, ...args }: FetchJSONOpts & { schema: T }): Promise<z.output<T>> {
     const json = await this.fetchJson(args);
     return schema.parse(json);
-  }
-
-  private async parseJsonOrThrow(res: Response, context: string): Promise<JSONValue> {
-    const text = await res.text().catch(() => "");
-    let json: JSONValue;
-    try {
-      json = text ? JSON.parse(text) : undefined;
-    } catch {}
-
-    if (!res.ok) {
-      const err: any = new Error(`${context} failed (${res.status})`);
-      err.status = res.status;
-      err.details = json ?? text?.slice(0, 500);
-      throw err;
-    }
-    return json;
   }
 }
