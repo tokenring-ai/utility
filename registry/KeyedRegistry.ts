@@ -1,4 +1,4 @@
-import { dedupe } from "../string/dedupe.ts";
+import { dedupe } from "../array/dedupe.ts";
 import { like } from "../string/like.ts";
 
 export default class KeyedRegistry<T = any> {
