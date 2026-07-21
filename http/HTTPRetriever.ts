@@ -1,5 +1,4 @@
 import type { ZodType, z } from "zod";
-import type { JSONValue } from "../json/safeParse.ts";
 import { doFetchWithRetry } from "./doFetchWithRetry.ts";
 
 export type FetchJSONOpts = {
@@ -55,7 +54,7 @@ export class HTTPRetriever {
     }
   }
 
-  async fetchJson({ url, opts, context, timeout }: FetchJSONOpts): Promise<JSONValue> {
+  async fetchJson({ url, opts, context, timeout }: FetchJSONOpts): Promise<z.JSONType> {
     const abortController = new AbortController();
     const handleParentAbort = () => abortController.abort();
     if (opts?.signal) opts.signal.addEventListener("abort", handleParentAbort);
@@ -81,7 +80,7 @@ export class HTTPRetriever {
     }
 
     try {
-      return JSON.parse(text);
+      return JSON.parse(text) as z.JSONType;
     } finally {
       clearTimeout(timeoutId);
       if (opts?.signal) opts.signal.removeEventListener("abort", handleParentAbort);
