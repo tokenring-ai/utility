@@ -1715,7 +1715,7 @@ Take advantage of built-in caching in utilities like `defaultEnv` and `cachedDat
 
 ## Testing and Development
 
-This package uses vitest for unit testing.
+This package uses bun test for unit testing.
 
 Run tests:
 
@@ -1750,7 +1750,7 @@ This runs TypeScript type checking without emitting files.
 
 ## Development Dependencies
 
-- `vitest`: ^4.1.1
+- `bun test` - Testing framework
 - `typescript`: ^6.0.2
 
 ## License
