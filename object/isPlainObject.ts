@@ -1,7 +1,7 @@
 /**
  * Checks if a value is a plain object (not an array, Date, or other special object)
  */
-export function isPlainObject(value: unknown): value is Record<string, any> {
+export function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (typeof value !== "object" || value === null) {
     return false;
   }
