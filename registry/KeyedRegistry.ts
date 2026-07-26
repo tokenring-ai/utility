@@ -1,21 +1,23 @@
+import { EventEmitter } from "node:events";
 import { dedupe } from "../array/dedupe.ts";
+import EnhancedMap from "../map/enhancedMap.ts";
 import { like } from "../string/like.ts";
 
 export default class KeyedRegistry<T = any> {
-  protected items: Map<string, T> = new Map();
-  private subscribers: Map<string, ((item: T) => void)[]> = new Map();
+  protected items = new EnhancedMap<string, T>();
+  private subscribers = new EventEmitter();
+
+  constructor(items?: Record<string, T> | Map<string, T>) {
+    this.subscribers.setMaxListeners(Infinity);
+    if (items) {
+      this.setAll(items);
+    }
+  }
 
   set = (name: string, resource: T) => {
     this.items.set(name, resource);
 
-    // Notify any waiting subscribers
-    const itemSubscribers = this.subscribers.get(name);
-    if (itemSubscribers) {
-      for (const callback of itemSubscribers) {
-        callback(resource);
-      }
-      this.subscribers.delete(name);
-    }
+    this.subscribers.emit(name, resource);
   };
 
   unregister = (name: string) => {
@@ -27,12 +29,11 @@ export default class KeyedRegistry<T = any> {
     const item = this.items.get(name);
     if (item) {
       callback(item);
+      return;
     }
 
     // Otherwise, subscribe and wait for registration
-    const subscribers = this.subscribers.get(name) || [];
-    subscribers.push(callback);
-    this.subscribers.set(name, subscribers);
+    this.subscribers.once(name, callback);
   };
 
   get = (name: string): T | undefined => {
@@ -56,10 +57,10 @@ export default class KeyedRegistry<T = any> {
   };
 
   keys = () => this.items.keys();
-  keysArray = () => Array.from(this.items.keys());
+  keysArray = () => this.items.keysArray();
 
   values = () => this.items.values();
-  valuesArray = () => Array.from(this.items.values());
+  valuesArray = () => this.items.valuesArray();
 
   keysLike = (likeName: string | string[]): string[] => {
     if (Array.isArray(likeName)) {
@@ -91,7 +92,7 @@ export default class KeyedRegistry<T = any> {
   };
 
   entries = () => this.items.entries();
-  entriesArray = () => Array.from(this.items.entries());
+  entriesArray = () => this.items.entriesArray();
 
   getLongestPrefixMatch = (input: string): { key: string; item: T; remainder: string } | undefined => {
     let longestMatch: { key: string; item: T; remainder: string } | undefined;
