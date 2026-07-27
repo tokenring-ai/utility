@@ -3,7 +3,6 @@ export default class EnhancedSet<T> extends Set<T> {
     return new EnhancedSet(this);
   }
 
-
   empty() {
     return this.size === 0;
   }

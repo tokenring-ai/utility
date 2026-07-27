@@ -1,10 +1,10 @@
 import { EventEmitter } from "node:events";
 import { dedupe } from "../array/dedupe.ts";
-import EnhancedMap from "../map/enhancedMap.ts";
+import EnhancedStringMap from "../map/enhancedStringMap.ts";
 import { like } from "../string/like.ts";
 
 export default class KeyedRegistry<T = any> {
-  protected items = new EnhancedMap<string, T>();
+  protected items = new EnhancedStringMap<T>();
   private subscribers = new EventEmitter();
 
   constructor(items?: Record<string, T> | Map<string, T>) {
@@ -61,6 +61,9 @@ export default class KeyedRegistry<T = any> {
 
   values = () => this.items.values();
   valuesArray = () => this.items.valuesArray();
+
+  reconcileAgainst = this.items.reconcileAgainst.bind(this.items);
+  reconcileAgainstAsync = this.items.reconcileAgainstAsync.bind(this.items);
 
   keysLike = (likeName: string | string[]): string[] => {
     if (Array.isArray(likeName)) {

@@ -1,4 +1,8 @@
 export default class EnhancedMap<K, V> extends Map<K, V> {
+  static fromPlainObject<K extends string | number | symbol, V>(obj: Record<K, V>) {
+    return new EnhancedMap<K, V>(Object.entries(obj) as [K, V][]);
+  }
+
   clone(): EnhancedMap<K, V> {
     return new EnhancedMap(this.entries());
   }
@@ -15,10 +19,6 @@ export default class EnhancedMap<K, V> extends Map<K, V> {
 
   toPlainObject() {
     return Object.fromEntries(this.entries()) as Record<(K & string) | number | symbol, V>;
-  }
-
-  static fromPlainObject<K extends string | number | symbol, V>(obj: Record<K, V>) {
-    return new EnhancedMap<K, V>(Object.entries(obj) as [K, V][]);
   }
 
   deleteAndReturnItem(key: K): V | undefined {
@@ -62,4 +62,34 @@ export default class EnhancedMap<K, V> extends Map<K, V> {
   sortedEntries(compareFn?: (a: [K, V], b: [K, V]) => number): [K, V][] {
     return this.entriesArray().sort(compareFn);
   }
+
+  /*
+ compare<T2>(other: Record<string, T2> | Map<string, T2>, callback: (key: string, item: T | undefined, otherItem: T2 | undefined)) {
+   if (other instanceof Map) {
+     for (const key of new Set([...this.items.keys(), ...other.keys()])) {
+       callback(key, this.items.get(key), other.get(key));
+     }
+   } else {
+     for (const key of new Set([...this.items.keys(), ...Object.keys(other)])) {
+       callback(key, this.items.get(key), other[key]);
+     }
+   }
+ }
+
+ join<T2>(other: Record<string, T2> | Map<string, T2>) {
+   const joined = new EnhancedMap<string, [T,T2] | [undefined, T2] | [T, undefined]>();
+   for (const [key, value] of this.items.entries()) {
+     joined.set(key, [value, undefined]);
+   }
+
+   for (const [key, value] of other instanceof Map ? other : Object.entries(other)) {
+     const entry = joined.get(key);
+     if (entry) {
+       entry[1] = value;
+     } else {
+       joined.set(key, [undefined, value]);
+     }
+   }
+   return joined;
+ }*/
 }
