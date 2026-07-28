@@ -4,15 +4,15 @@ import { like } from "../string/like.ts";
 import EnhancedMap from "./enhancedMap.ts";
 
 export type ReconcileHandlers<L, R> = {
-  deleting: (name: string, left: L) => void;
+  deleting?: (name: string, left: L) => void;
   creating: (name: string, right: R) => L;
-  updating: (name: string, left: L, right: R) => void;
+  updating: (name: string, left: L, right: R) => L;
 };
 
 export type AsyncReconcileHandlers<L, R> = {
   deleting: (name: string, left: L) => MaybePromise<void>;
   creating: (name: string, right: R) => MaybePromise<L>;
-  updating: (name: string, left: L, right: R) => MaybePromise<void>;
+  updating: (name: string, left: L, right: R) => MaybePromise<L>;
 };
 
 export default class EnhancedStringMap<V> extends EnhancedMap<string, V> {
@@ -77,9 +77,9 @@ export default class EnhancedStringMap<V> extends EnhancedMap<string, V> {
     for (const name of new Set([...this.keys(), ...Object.keys(other)])) {
       if (this.has(name)) {
         if (name in other && other[name]) {
-          handlers.updating(name, this.get(name)!, other[name]!);
+          this.set(name, handlers.updating(name, this.get(name)!, other[name]!));
         } else {
-          handlers.deleting(name, this.get(name)!);
+          handlers.deleting?.(name, this.get(name)!);
           this.delete(name);
         }
       } else {
@@ -92,7 +92,7 @@ export default class EnhancedStringMap<V> extends EnhancedMap<string, V> {
     for (const name of new Set([...this.keys(), ...Object.keys(other)])) {
       if (this.has(name)) {
         if (name in other && other[name]) {
-          await handlers.updating(name, this.get(name)!, other[name]!);
+          this.set(name, await handlers.updating(name, this.get(name)!, other[name]!));
         } else {
           await handlers.deleting(name, this.get(name)!);
           this.delete(name);

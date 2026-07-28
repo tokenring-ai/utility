@@ -56,7 +56,7 @@ export default class EnhancedMap<K, V> extends Map<K, V> {
   }
 
   mapEntries<R>(fn: ([key, value]: [K, V]) => R): R[] {
-    return this.mapEntries(fn);
+    return this.entriesArray().map(fn);
   }
 
   sortedEntries(compareFn?: (a: [K, V], b: [K, V]) => number): [K, V][] {
