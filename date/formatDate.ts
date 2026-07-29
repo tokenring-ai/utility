@@ -1,5 +1,7 @@
-export function formatDate(timestampOrDate: number | Date): string {
+export function formatDate(timestampOrDate: number | Date | null | undefined): string {
+  if (timestampOrDate == null) return "—";
   const date = typeof timestampOrDate === "number" ? new Date(timestampOrDate) : timestampOrDate;
+  if (Number.isNaN(date.getTime())) return "—";
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
