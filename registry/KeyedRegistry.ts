@@ -21,7 +21,7 @@ export default class KeyedRegistry<T = any> {
   };
 
   unregister = (name: string) => {
-    this.items.delete(name);
+    return this.items.deleteAndReturnItem(name);
   };
 
   waitFor = (name: string, callback: (item: T) => void): void => {

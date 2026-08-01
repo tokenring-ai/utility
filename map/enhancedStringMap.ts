@@ -1,3 +1,4 @@
+import { eachLimit } from "async";
 import type { MaybePromise } from "bun";
 import { dedupe } from "../array/dedupe.ts";
 import { like } from "../string/like.ts";
@@ -13,6 +14,7 @@ export type AsyncReconcileHandlers<L, R> = {
   deleting: (name: string, left: L) => MaybePromise<void>;
   creating: (name: string, right: R) => MaybePromise<L>;
   updating: (name: string, left: L, right: R) => MaybePromise<L>;
+  parallel?: number;
 };
 
 export default class EnhancedStringMap<V> extends EnhancedMap<string, V> {
@@ -89,17 +91,22 @@ export default class EnhancedStringMap<V> extends EnhancedMap<string, V> {
   }
 
   async reconcileAgainstAsync<T2>(other: Record<string, T2>, handlers: AsyncReconcileHandlers<V, T2>) {
-    for (const name of new Set([...this.keys(), ...Object.keys(other)])) {
+    const { parallel = Infinity, creating, updating, deleting } = handlers;
+    const names = Array.from(new Set([...this.keys(), ...Object.keys(other)]));
+
+    await eachLimit(names, parallel, async name => {
       if (this.has(name)) {
         if (name in other && other[name]) {
-          this.set(name, await handlers.updating(name, this.get(name)!, other[name]!));
+          const updated = await updating(name, this.get(name)!, other[name]!);
+          this.set(name, updated);
         } else {
-          await handlers.deleting(name, this.get(name)!);
+          await deleting(name, this.get(name)!);
           this.delete(name);
         }
       } else {
-        this.set(name, await handlers.creating(name, other[name]!));
+        const created = await creating(name, other[name]!);
+        this.set(name, created);
       }
-    }
+    });
   }
 }
