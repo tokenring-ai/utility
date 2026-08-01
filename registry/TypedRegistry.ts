@@ -8,13 +8,23 @@ export default class TypedRegistry<MinimumType extends ThingWithConstructor> {
   protected registry = new KeyedRegistry<MinimumType>();
   getItems = this.registry.valuesArray;
 
-  register = (...items: MinimumType[] | MinimumType[][]) => {
-    for (const item of items.flat() as MinimumType[]) {
+  addOne = <T extends MinimumType>(item: T) => {
+    this.registry.set(item.constructor.name, item);
+    return item;
+  };
+
+  addMany = (items: Iterable<MinimumType>) => {
+    for (const item of items) {
       this.registry.set(item.constructor.name, item);
     }
   };
 
-  unregister = (...items: MinimumType[]) => {
+  removeOne = <T extends MinimumType>(item: T) => {
+    this.registry.unregister(item.constructor.name);
+    return item;
+  };
+
+  removeMany = (...items: MinimumType[]) => {
     for (const item of items) {
       this.registry.unregister(item.constructor.name);
     }
