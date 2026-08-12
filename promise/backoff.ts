@@ -17,8 +17,8 @@ export async function backoff<T>(options: BackoffOptions, fn: ({ attempt }: { at
     try {
       const result = await fn({ attempt });
 
-      // If the result is truthy (e.g., we found a client), return it
-      if (result) {
+      // Only null/undefined signal "retry"; falsy values like 0, false, "" are valid results
+      if (result != null) {
         return result;
       }
     } catch (error: unknown) {

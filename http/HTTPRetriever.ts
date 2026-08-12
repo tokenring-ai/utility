@@ -63,23 +63,23 @@ export class HTTPRetriever {
 
     const absoluteURL = new URL(url, this.opts.baseUrl);
 
-    const res = await doFetchWithRetry(absoluteURL, {
-      ...opts,
-      headers: { ...this.opts.headers, ...opts?.headers },
-      signal: abortController.signal,
-    });
-
-    const text = await res.text().catch(() => "");
-
-    if (!res.ok) {
-      throw new HTTPError(`${context} failed (${res.status})`, res.status, text.slice(0, 500));
-    }
-
-    if (text.length === 0) {
-      throw new HTTPError(`${context} failed (empty response)`, 400, text.slice(0, 500));
-    }
-
     try {
+      const res = await doFetchWithRetry(absoluteURL, {
+        ...opts,
+        headers: { ...this.opts.headers, ...opts?.headers },
+        signal: abortController.signal,
+      });
+
+      const text = await res.text().catch(() => "");
+
+      if (!res.ok) {
+        throw new HTTPError(`${context} failed (${res.status})`, res.status, text.slice(0, 500));
+      }
+
+      if (text.length === 0) {
+        throw new HTTPError(`${context} failed (empty response)`, 400, text.slice(0, 500));
+      }
+
       return JSON.parse(text) as z.JSONType;
     } finally {
       clearTimeout(timeoutId);

@@ -26,8 +26,6 @@ export default [
   "Calculating the Kessel Run in parsecs",
   "Tuning the subspace transceiver",
   "Initiating the countdown to liftoff",
-  "Tuning the subspace transceiver",
-  "Initiating the countdown to liftoff",
   "Adjusting the gravity plating",
   "Navigating the asteroid belt",
   "Scanning for signs of intelligent life",

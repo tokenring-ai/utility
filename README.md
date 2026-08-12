@@ -125,6 +125,24 @@ splitArrayable('a,b,c', ',');     // ['a', 'b', 'c']
 splitArrayable(['a'], ',');       // ['a']
 ```
 
+#### `pickNextItem(list, removedKey, getKey, isAvailable?): T | undefined`
+
+Pick the next item to select after one is removed from an ordered list (close-tab neighbor
+behavior). Prefers the neighbor to the right, then left. Optional `isAvailable` skips items
+that are already hidden client-side or otherwise ineligible.
+
+```typescript
+import { pickNextItem } from '@tokenring-ai/utility/array/pickNextItem';
+
+const tabs = [{ name: 'a' }, { name: 'b' }, { name: 'c' }];
+const hidden = new Set(['c']);
+
+pickNextItem(tabs, 'b', t => t.name);                    // { name: 'c' }
+pickNextItem(tabs, 'c', t => t.name);                    // { name: 'b' }
+pickNextItem(tabs, 'b', t => t.name, t => !hidden.has(t.name)); // { name: 'a' } (c unavailable)
+pickNextItem([{ name: 'solo' }], 'solo', t => t.name);   // undefined
+```
+
 ### Buffer Utilities
 
 #### `isBinaryData(buffer: Buffer): boolean`
@@ -410,6 +428,32 @@ clamp(5, 0, 10);     // 5
 clamp(-1, 0, 10);    // 0
 clamp(15, 0, 10);    // 10
 ```
+
+#### `formatBytes(size: number, options?: FormatBytesOptions): string`
+
+Formats a byte count into a human-readable string using binary (1024) units by default.
+
+```typescript
+import { formatBytes } from '@tokenring-ai/utility/number/formatBytes';
+
+formatBytes(512);                              // "512 B"
+formatBytes(1536);                             // "1.5 KB"
+formatBytes(1572864);                          // "1.5 MB"
+formatBytes(1024 ** 3);                        // "1.0 GB"
+formatBytes(1536, { decimals: 2 });            // "1.50 KB"
+formatBytes(1500, { base: "decimal" });        // "1.5 KB"
+formatBytes(5 * 1024 * 1024, { maxUnit: "KB" }); // "5120.0 KB"
+formatBytes(1536, { spaced: false });          // "1.5KB"
+```
+
+Options:
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `decimals` | `1` | Decimal places for non-byte units |
+| `base` | `"binary"` | `"binary"` (1024) or `"decimal"` (1000) |
+| `maxUnit` | `"auto"` | Cap unit at B / KB / MB / GB / TB, or auto up to TB |
+| `spaced` | `true` | Space between number and unit |
 
 ### Object Utilities
 
@@ -926,6 +970,23 @@ import { truncateVisible } from '@tokenring-ai/utility/string/truncateVisible';
 truncateVisible('hello world', 8);  // 'hello wo…'
 truncateVisible('hi', 10);          // 'hi'
 ```
+
+#### `truncateText(text: string, max?: number): string`
+
+Truncates text for list-row previews: collapses whitespace, prefers word boundaries, and measures length in grapheme
+clusters so emoji is not split. Default max is 140.
+
+```typescript
+import { truncateText } from '@tokenring-ai/utility/string/truncateText';
+
+truncateText('hello');                                      // 'hello'
+truncateText('a   b\nc');                                   // 'a b c'
+truncateText('Please refactor the authentication module', 40);
+// 'Please refactor the authentication…'
+truncateText('a'.repeat(200), 20);                          // 'aaaaaaaaaaaaaaaaaaa…'
+```
+
+Related: `intelligentTruncate` (options object, line limits, custom suffix) and `truncateVisible` (terminal visible width).
 
 #### `indent(input: string | string[], level: number): string`
 

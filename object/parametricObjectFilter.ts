@@ -3,6 +3,10 @@ type ParametricObjectRequirements = Record<string, number | string | null | unde
 export default function parametricObjectFilter(requirements: ParametricObjectRequirements) {
   return (obj: Record<string, unknown>) => {
     for (const [key, condition] of Object.entries(requirements)) {
+      if (condition == null) {
+        throw new Error(`Invalid filter condition for '${key}': expected number or string, got ${condition}`);
+      }
+
       const [, operator, value] = String(condition).match(/^([<>]?[=<>]?)([^=<>].*)$/) ?? [];
 
       const field = obj[key];
@@ -32,7 +36,7 @@ export default function parametricObjectFilter(requirements: ParametricObjectReq
         switch (operator) {
           case "":
           case "=":
-            if (key !== "name" && field !== value) return false;
+            if (field !== value) return false;
             break;
           default:
             throw new Error(`Operator '${operator}' not supported for strings`);

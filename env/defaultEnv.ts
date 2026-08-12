@@ -12,6 +12,7 @@ export function defaultEnv(names: string | string[], defaultValue: string): stri
     const value = process.env[name];
     if (value) {
       envCache.set(name, value);
+      return value;
     }
 
     const fileName = process.env[name + "_FILE"];

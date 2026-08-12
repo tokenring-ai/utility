@@ -9,9 +9,17 @@ import type { MaybePromise } from "bun";
  * @template T
  */
 export default function waitForAbort<T>(signal: AbortSignal, param2: (ev: Event) => MaybePromise<T>): Promise<T> {
-  return new Promise<T>((resolve, _reject) => {
-    signal.addEventListener("abort", (ev: Event) => {
-      resolve(param2(ev));
-    });
+  return new Promise<T>(resolve => {
+    if (signal.aborted) {
+      resolve(param2(new Event("abort")));
+      return;
+    }
+    signal.addEventListener(
+      "abort",
+      (ev: Event) => {
+        resolve(param2(ev));
+      },
+      { once: true },
+    );
   });
 }

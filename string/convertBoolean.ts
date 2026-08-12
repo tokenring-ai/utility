@@ -7,6 +7,8 @@ export default function convertBoolean(text: string | undefined | null) {
     case "false":
     case "no":
     case "0":
+    case undefined:
+    case null:
       return false;
     default:
       throw new Error(`Unknown string used as boolean value: ${text}`);

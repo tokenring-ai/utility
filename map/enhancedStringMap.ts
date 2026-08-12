@@ -78,7 +78,7 @@ export default class EnhancedStringMap<V> extends EnhancedMap<string, V> {
   reconcileAgainst<T2>(other: Record<string, T2>, handlers: ReconcileHandlers<V, T2>) {
     for (const name of new Set([...this.keys(), ...Object.keys(other)])) {
       if (this.has(name)) {
-        if (name in other && other[name]) {
+        if (name in other) {
           this.set(name, handlers.updating(name, this.get(name)!, other[name]!));
         } else {
           handlers.deleting?.(name, this.get(name)!);
@@ -96,7 +96,7 @@ export default class EnhancedStringMap<V> extends EnhancedMap<string, V> {
 
     await eachLimit(names, parallel, async name => {
       if (this.has(name)) {
-        if (name in other && other[name]) {
+        if (name in other) {
           const updated = await updating(name, this.get(name)!, other[name]!);
           this.set(name, updated);
         } else {
