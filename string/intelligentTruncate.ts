@@ -32,7 +32,7 @@ export default function intelligentTruncate(s: string, { maxLength, suffix = "..
   if (result.length <= maxLength) return result;
 
   // Calculate the target length accounting for the suffix
-  const targetLength = maxLength - suffix.length;
+  const targetLength = Math.max(0, maxLength - suffix.length);
 
   // Find the last space within the allowed length to avoid cutting words
   const index = result.lastIndexOf(" ", targetLength + 1);

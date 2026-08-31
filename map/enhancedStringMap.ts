@@ -18,6 +18,10 @@ export type AsyncReconcileHandlers<L, R> = {
 };
 
 export default class EnhancedStringMap<V> extends EnhancedMap<string, V> {
+  clone(): EnhancedStringMap<V> {
+    return new EnhancedStringMap(this.entries());
+  }
+
   ensure(name: string): V {
     const item = this.get(name);
     if (!item) {
@@ -32,6 +36,16 @@ export default class EnhancedStringMap<V> extends EnhancedMap<string, V> {
         throw new Error(`Item ${name} not found in ${this.keysArray().join(",")}`);
       }
     }
+  }
+
+  pickObject(keys: string[]): Record<string, V> {
+    const picked: Record<string, V> = {} as Record<string, V>;
+    for (const key of keys) {
+      if (this.has(key)) {
+        picked[key] = this.get(key)!;
+      }
+    }
+    return picked;
   }
 
   keysLike(likeName: string | string[]): string[] {

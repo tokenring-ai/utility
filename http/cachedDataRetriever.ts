@@ -58,6 +58,7 @@ export default function cachedDataRetriever<T = unknown>(
           return lastResponse;
         } catch {
           lastResponse = null;
+          lastOnlineCheck = Date.now();
           return lastResponse;
         } finally {
           clearTimeout(timeoutId);

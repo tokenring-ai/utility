@@ -14,6 +14,12 @@ export function wrapText(text: string, maxWidth: number): string[] {
         currentLine += (currentLine === "" ? "" : " ") + word;
       } else {
         if (currentLine) lines.push(currentLine);
+        if (maxWidth > 0 && word.length > maxWidth) {
+          while (word.length > maxWidth) {
+            lines.push(word.slice(0, maxWidth));
+            word = word.slice(maxWidth);
+          }
+        }
         currentLine = word;
       }
     });

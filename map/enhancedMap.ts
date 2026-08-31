@@ -63,6 +63,17 @@ export default class EnhancedMap<K, V> extends Map<K, V> {
     return this.entriesArray().sort(compareFn);
   }
 
+  pick<T extends K>(keys: T[]): EnhancedMap<T, V> {
+    const picked = new EnhancedMap<T, V>();
+    for (const key of keys) {
+      if (this.has(key)) {
+        const value = this.get(key)!;
+        picked.set(key, value);
+      }
+    }
+    return picked;
+  }
+
   /*
  compare<T2>(other: Record<string, T2> | Map<string, T2>, callback: (key: string, item: T | undefined, otherItem: T2 | undefined)) {
    if (other instanceof Map) {

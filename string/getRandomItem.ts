@@ -1,4 +1,6 @@
-export default function getRandomItem(items: string[], seed?: number) {
+export default function getRandomItem(items: string[], seed?: number): string {
   const effectiveSeed = seed ?? Math.random() * items.length;
-  return items[Math.floor(effectiveSeed % items.length)];
+  const len = items.length;
+  const index = Math.floor(((effectiveSeed % len) + len) % len);
+  return items[index]!;
 }
