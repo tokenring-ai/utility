@@ -3,8 +3,8 @@
   "version": "0.2.0",
   "dependencies": {
     "async": "^3.2.6",
-    "human-id": "^4.2.0",
-    "zod": "^4.4.3"
+    "human-id": "^4.2.2",
+    "zod": "^4.6.7"
   },
   "exports": {
     "./*": "./*.ts",
