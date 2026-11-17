@@ -1,11 +1,13 @@
 import type { ZodType, z } from "zod";
-import { doFetchWithRetry } from "./doFetchWithRetry.ts";
+import { doFetchWithRetry, type FetchRetryOptions } from "./doFetchWithRetry.ts";
 
 export type FetchJSONOpts = {
   url: string | URL;
   context: string;
   opts?: Omit<RequestInit, "headers"> & { headers?: Record<string, string> };
   timeout?: number;
+  /** How failed attempts are retried; `{ idempotent: false }` for a request that must not run twice. */
+  retry?: FetchRetryOptions;
 };
 
 export type HTTPRetrieverOpts = {
@@ -27,7 +29,7 @@ export class HTTPError extends Error {
 export class HTTPRetriever {
   constructor(private readonly opts: HTTPRetrieverOpts) {}
 
-  async fetchText({ url, opts, context, timeout }: FetchJSONOpts): Promise<string> {
+  async fetchText({ url, opts, context, timeout, retry }: FetchJSONOpts): Promise<string> {
     const abortController = new AbortController();
     const handleParentAbort = () => abortController.abort();
     if (opts?.signal) opts.signal.addEventListener("abort", handleParentAbort);
@@ -36,11 +38,12 @@ export class HTTPRetriever {
 
     const absoluteURL = new URL(url, this.opts.baseUrl);
     try {
-      const res = await doFetchWithRetry(absoluteURL, {
+      const init: RequestInit = {
         ...opts,
         headers: { ...this.opts.headers, ...opts?.headers },
         signal: abortController.signal,
-      });
+      };
+      const res = retry ? await doFetchWithRetry(absoluteURL, init, retry) : await doFetchWithRetry(absoluteURL, init);
 
       const text = await res.text().catch(() => "");
       if (!res.ok) {
@@ -54,7 +57,7 @@ export class HTTPRetriever {
     }
   }
 
-  async fetchJson({ url, opts, context, timeout }: FetchJSONOpts): Promise<z.JSONType> {
+  async fetchJson({ url, opts, context, timeout, retry }: FetchJSONOpts): Promise<z.JSONType> {
     const abortController = new AbortController();
     const handleParentAbort = () => abortController.abort();
     if (opts?.signal) opts.signal.addEventListener("abort", handleParentAbort);
@@ -64,11 +67,12 @@ export class HTTPRetriever {
     const absoluteURL = new URL(url, this.opts.baseUrl);
 
     try {
-      const res = await doFetchWithRetry(absoluteURL, {
+      const init: RequestInit = {
         ...opts,
         headers: { ...this.opts.headers, ...opts?.headers },
         signal: abortController.signal,
-      });
+      };
+      const res = retry ? await doFetchWithRetry(absoluteURL, init, retry) : await doFetchWithRetry(absoluteURL, init);
 
       const text = await res.text().catch(() => "");
 
